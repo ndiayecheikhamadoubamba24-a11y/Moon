@@ -1,0 +1,15 @@
+# PostgreSQL pour le développement (optionnel : SQLite fonctionne sans rien installer)
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: moon
+      POSTGRES_USER: moon
+      POSTGRES_PASSWORD: moon
+    ports:
+      - "5432:5432"
+    volumes:
+      - moon_pg:/var/lib/postgresql/data
+
+volumes:
+  moon_pg:
