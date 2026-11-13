@@ -18,16 +18,38 @@ class ModuleController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        return response()->json(
-            Module::with(['category:id,name', 'author:id,name'])
-                ->withCount('sections')
-                ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-                ->when($request->category_id, fn ($q, $c) => $q->where('category_id', $c))
-                ->when($request->language, fn ($q, $l) => $q->where('language', $l))
-                ->when($request->q, fn ($q, $t) => $q->where('title', 'like', "%{$t}%"))
-                ->latest('updated_at')
-                ->paginate(25)
-        );
+        $page = Module::with(['category:id,name', 'author:id,name'])
+            ->withCount(['sections', 'progress as started_count', 'progress as completed_count' => fn ($q) => $q->whereNotNull('completed_at')])
+            ->when($request->status, fn ($q, $s) => is_array($s) ? $q->whereIn('status', $s) : $q->where('status', $s))
+            ->when($request->level, fn ($q, $l) => $q->where('level', $l))
+            ->when($request->author_id, fn ($q, $a) => $q->where('author_id', $a))
+            ->when($request->category_id, fn ($q, $c) => $q->where('category_id', $c))
+            ->when($request->language, fn ($q, $l) => $q->where('language', $l))
+            ->when($request->q, fn ($q, $t) => $q->where('title', 'like', "%{$t}%"))
+            ->latest('updated_at')
+            ->paginate((int) $request->input('per_page', 25));
+        $page->getCollection()->transform(fn ($m) => tap($m, fn ($m) => $m->setAttribute('completion_rate', $m->started_count ? round($m->completed_count / $m->started_count * 100) : null)));
+
+        return response()->json([
+            ...$page->toArray(),
+            'counts' => ['all' => Module::count(), ...collect(Module::STATUSES)->mapWithKeys(fn ($st) => [$st => Module::where('status', $st)->count()])],
+        ]);
+    }
+
+    /** Statistiques d'un module : lectures, complétion, évolution sur 30 jours. */
+    public function stats(Module $module): JsonResponse
+    {
+        $progress = $module->progress()->get(['progress', 'completed_at', 'created_at']);
+        $since = now()->subDays(29)->startOfDay();
+        $byDay = $progress->where('created_at', '>=', $since)->groupBy(fn ($p) => $p->created_at->toDateString())->map->count();
+
+        return response()->json([
+            'views' => $module->views_count,
+            'started' => $progress->count(),
+            'completed' => $progress->whereNotNull('completed_at')->count(),
+            'completion_rate' => $progress->count() ? round($progress->whereNotNull('completed_at')->count() / $progress->count() * 100) : null,
+            'by_day' => collect(range(29, 0))->map(fn ($d) => ['date' => $k = now()->subDays($d)->toDateString(), 'count' => $byDay[$k] ?? 0])->values(),
+        ]);
     }
 
     public function show(Module $module): JsonResponse
@@ -122,6 +144,8 @@ class ModuleController extends Controller
             'level' => ['sometimes', Rule::in(['debutant', 'intermediaire', 'avance'])],
             'language' => ['sometimes', Rule::in(['fr', 'wo'])],
             'duration_minutes' => ['sometimes', 'integer', 'between:1,120'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', 'max:30'],
             'sections' => ['sometimes', 'array'],
             'sections.*.type' => ['required', Rule::in(ModuleSection::TYPES)],
             'sections.*.title' => ['nullable', 'string', 'max:200'],

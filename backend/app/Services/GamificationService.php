@@ -49,6 +49,7 @@ class GamificationService
         $streak = 0;
         $bestStreak = 0;
         $missed = [];
+        $given = [];
 
         foreach ($answers as $item) {
             $question = $questions->get($item['question_id'] ?? null);
@@ -56,6 +57,7 @@ class GamificationService
                 continue;
             }
             $ok = $question->isCorrect($item['answer'] ?? null);
+            $given[$question->id] = $item['answer'] ?? null;
             $results[] = [
                 'question_id' => $question->id,
                 'correct' => $ok,
@@ -75,7 +77,7 @@ class GamificationService
         $points = $correct * $game->points_per_answer;
         $playedAt ??= CarbonImmutable::now();
 
-        return DB::transaction(function () use ($user, $game, $correct, $total, $points, $missed, $playedAt, $clientUuid, $results, $bestStreak) {
+        return DB::transaction(function () use ($user, $game, $correct, $total, $points, $missed, $given, $playedAt, $clientUuid, $results, $bestStreak) {
             $previousBest = (int) GameScore::where('user_id', $user->id)->where('game_id', $game->id)->max('score');
 
             $score = GameScore::create([
@@ -85,6 +87,7 @@ class GamificationService
                 'total' => $total,
                 'points' => $points,
                 'missed_question_ids' => $missed,
+                'answers' => $given,
                 'played_at' => $playedAt,
                 'client_uuid' => $clientUuid,
             ]);

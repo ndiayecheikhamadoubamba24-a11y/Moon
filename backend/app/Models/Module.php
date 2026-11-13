@@ -16,12 +16,12 @@ class Module extends Model
 
     protected $fillable = [
         'category_id', 'title', 'slug', 'summary', 'cover_image', 'level', 'language',
-        'duration_minutes', 'scheduled_at',
+        'duration_minutes', 'scheduled_at', 'tags',
     ];
 
     protected function casts(): array
     {
-        return ['scheduled_at' => 'datetime', 'published_at' => 'datetime'];
+        return ['scheduled_at' => 'datetime', 'published_at' => 'datetime', 'tags' => 'array'];
     }
 
     /** Modules visibles dans l'app : publiés, ou programmés dont la date est passée. */

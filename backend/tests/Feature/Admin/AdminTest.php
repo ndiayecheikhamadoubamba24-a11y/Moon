@@ -4,9 +4,11 @@ namespace Tests\Feature\Admin;
 
 use App\Models\AuditLog;
 use App\Models\Faq;
+use App\Models\Game;
 use App\Models\Module;
 use App\Models\User;
 use Database\Seeders\ContentSeeder;
+use Database\Seeders\GameSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -65,11 +67,22 @@ class AdminTest extends TestCase
         $this->assertArrayNotHasKey('cycles', $json);
         $this->assertArrayNotHasKey('cycle_length', $json);
 
-        $this->actingAs($moderator)->postJson("/api/v1/admin/users/{$user->id}/suspend")->assertOk();
+        $this->actingAs($moderator)->postJson("/api/v1/admin/users/{$user->id}/suspend", ['reason' => 'Contenu inapproprié', 'days' => 7])->assertOk();
         $this->assertSame('suspended', $user->fresh()->status);
         $this->actingAs($user->fresh())->getJson('/api/v1/me')->assertForbidden();
 
-        $this->actingAs($moderator)->postJson("/api/v1/admin/users/{$moderator->id}/suspend")->assertUnprocessable();
+        $this->actingAs($moderator)->postJson("/api/v1/admin/users/{$moderator->id}/suspend", ['reason' => 'x'])->assertUnprocessable();
+
+        // La liste n'expose ni e-mail ni téléphone, seulement une référence
+        $row = $this->actingAs($moderator)->getJson('/api/v1/admin/users')->assertOk()->json('data.0');
+        $this->assertArrayNotHasKey('email', $row);
+        $this->assertArrayNotHasKey('phone', $row);
+        $this->assertMatchesRegularExpression('/^USR-[0-9A-Z]{5}$/', $row['reference']);
+        $this->actingAs($moderator)->getJson('/api/v1/admin/users?q='.$row['reference'])->assertJsonPath('data.0.id', $row['id']);
+
+        // Suspension temporaire levée automatiquement à échéance
+        $this->travel(8)->days();
+        $this->assertFalse($user->fresh()->isSuspended());
     }
 
     public function test_dashboard_masks_small_groups(): void
@@ -104,5 +117,34 @@ class AdminTest extends TestCase
         $id = $this->actingAs($user)->postJson('/api/v1/reports', ['type' => 'faq', 'id' => $faq->id, 'reason' => 'wrong_info'])->assertCreated()->json('id');
         $this->actingAs($moderator)->patchJson("/api/v1/admin/reports/{$id}", ['status' => 'resolved', 'action' => 'unpublish'])->assertOk();
         $this->assertFalse($faq->fresh()->is_published);
+    }
+
+    public function test_question_bank_stats_bulk_and_import(): void
+    {
+        $this->seed(GameSeeder::class);
+        $educator = User::factory()->staff('educator')->create();
+        $player = User::factory()->create();
+        $game = Game::where('type', 'quiz')->first();
+        $q = $game->questions()->first();
+        $this->actingAs($player)->postJson("/api/v1/games/{$game->id}/scores", ['answers' => [['question_id' => $q->id, 'answer' => 'A']]]);
+        $this->actingAs($player)->postJson("/api/v1/games/{$game->id}/scores", ['answers' => [['question_id' => $q->id, 'answer' => 'C']]]);
+
+        $row = collect($this->actingAs($educator)->getJson('/api/v1/admin/questions?per_page=100')->assertOk()->json('data'))->firstWhere('id', $q->id);
+        $this->assertSame(2, $row['plays']);
+        $this->assertEquals(50, $row['success_rate']);
+
+        $stats = $this->actingAs($educator)->getJson("/api/v1/admin/questions/{$q->id}/stats")->assertOk();
+        $this->assertCount(2, $stats->json('distribution'));
+
+        $this->actingAs($educator)->getJson('/api/v1/admin/games-overview')->assertOk()->assertJsonPath('active_questions', 22);
+        $this->actingAs($educator)->postJson('/api/v1/admin/questions/bulk', ['ids' => [$q->id], 'action' => 'deactivate'])->assertOk();
+        $this->assertFalse($q->fresh()->is_active);
+
+        $import = $this->actingAs($educator)->postJson('/api/v1/admin/questions/import?dry_run=1', ['rows' => [
+            ['type' => 'quiz', 'enonce' => 'Question ?', 'options' => 'Oui|Non', 'reponse' => 'A', 'theme' => 'Hygiène'],
+            ['type' => 'quiz', 'enonce' => '', 'options' => 'Oui', 'reponse' => 'C'],
+        ]])->assertOk();
+        $this->assertSame(1, $import->json('valid'));
+        $this->assertSame(1, $import->json('invalid'));
     }
 }

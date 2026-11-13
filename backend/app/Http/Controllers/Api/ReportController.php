@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Faq;
 use App\Models\HelpMessage;
 use App\Models\Module;
+use App\Models\Question;
 use App\Models\Report;
 use App\Models\Resource;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,7 @@ class ReportController extends Controller
         'faq' => Faq::class,
         'help_message' => HelpMessage::class,
         'resource' => Resource::class,
+        'question' => Question::class,
     ];
 
     public function store(Request $request): JsonResponse

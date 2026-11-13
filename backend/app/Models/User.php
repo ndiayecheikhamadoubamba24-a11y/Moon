@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -49,8 +50,15 @@ class User extends Authenticatable
             'guardian_consent' => 'boolean',
             'leaderboard_opt_in' => 'boolean',
             'notification_settings' => 'array',
+            'suspended_until' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /** Référence anonyme affichée dans le back-office (jamais l'e-mail ni le téléphone). */
+    public function reference(): string
+    {
+        return 'USR-'.strtoupper(str_pad(base_convert((string) (($this->id * 7919 + 104729) % 60466176), 10, 36), 5, '0', STR_PAD_LEFT));
     }
 
     public function isStaff(): bool
@@ -65,6 +73,10 @@ class User extends Authenticatable
 
     public function isSuspended(): bool
     {
+        if ($this->status === 'suspended' && $this->suspended_until && $this->suspended_until->isPast()) {
+            $this->forceFill(['status' => 'active', 'suspended_until' => null, 'suspension_reason' => null])->save();
+        }
+
         return $this->status === 'suspended';
     }
 
@@ -106,6 +118,11 @@ class User extends Authenticatable
     public function helpRequests(): HasMany
     {
         return $this->hasMany(HelpRequest::class);
+    }
+
+    public function reportsAgainst(): MorphMany
+    {
+        return $this->morphMany(Report::class, 'reportable');
     }
 
     public function savedResources(): BelongsToMany

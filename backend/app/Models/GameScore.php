@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GameScore extends Model
 {
-    protected $fillable = ['user_id', 'game_id', 'score', 'total', 'points', 'missed_question_ids', 'played_at', 'client_uuid'];
+    protected $fillable = ['user_id', 'game_id', 'score', 'total', 'points', 'missed_question_ids', 'played_at', 'client_uuid', 'answers'];
 
     protected function casts(): array
     {
-        return ['missed_question_ids' => 'array', 'played_at' => 'datetime'];
+        return ['missed_question_ids' => 'array', 'answers' => 'array', 'played_at' => 'datetime'];
     }
 
     public function game(): BelongsTo

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api;
 use App\Http\Controllers\Api\Admin;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -102,7 +103,15 @@ Route::prefix('v1')->group(function () {
             Route::get('dashboard', Admin\DashboardController::class);
 
             // Contenus : éducateurs
+            Route::get('me', fn (Request $r) => $r->user()->only(['id', 'name', 'email', 'role']));
+
             Route::middleware('role:educator')->group(function () {
+                Route::get('modules/{module}/stats', [Admin\ModuleController::class, 'stats']);
+                Route::get('games-overview', [Admin\QuestionController::class, 'overview']);
+                Route::get('questions/{question}/stats', [Admin\QuestionController::class, 'stats']);
+                Route::post('questions/{question}/validate', [Admin\QuestionController::class, 'validateMedically']);
+                Route::post('questions/bulk', [Admin\QuestionController::class, 'bulk']);
+                Route::post('questions/import', [Admin\QuestionController::class, 'import']);
                 Route::apiResource('modules', Admin\ModuleController::class);
                 Route::post('modules/{module}/status', [Admin\ModuleController::class, 'transition']);
                 Route::apiResource('categories', Admin\CategoryController::class);
@@ -118,6 +127,8 @@ Route::prefix('v1')->group(function () {
             // Utilisateurs : modérateurs
             Route::middleware('role:moderator')->group(function () {
                 Route::get('users', [Admin\UserController::class, 'index']);
+                Route::get('users-overview', [Admin\UserController::class, 'overview']);
+                Route::get('users-registrations', [Admin\UserController::class, 'registrations']);
                 Route::get('users/{user}', [Admin\UserController::class, 'show']);
                 Route::post('users/{user}/suspend', [Admin\UserController::class, 'suspend']);
                 Route::post('users/{user}/activate', [Admin\UserController::class, 'activate']);
@@ -138,6 +149,9 @@ Route::prefix('v1')->group(function () {
                 Route::patch('help-requests/{helpRequest}', [Admin\HelpRequestController::class, 'update']);
                 Route::post('help-requests/{helpRequest}/messages', [Admin\HelpRequestController::class, 'message']);
                 Route::post('help-requests/{helpRequest}/faq', [Admin\HelpRequestController::class, 'publishToFaq']);
+                Route::get('resources-overview', [Admin\ResourceAdminController::class, 'overview']);
+                Route::post('resources/bulk', [Admin\ResourceAdminController::class, 'bulk']);
+                Route::post('resources/import', [Admin\ResourceAdminController::class, 'import']);
                 Route::apiResource('resources', Admin\ResourceAdminController::class);
                 Route::get('resource-suggestions', [Admin\AuditLogController::class, 'suggestions']);
                 Route::patch('resource-suggestions/{suggestion}', [Admin\AuditLogController::class, 'updateSuggestion']);

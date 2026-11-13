@@ -17,7 +17,7 @@ class Resource extends Model
     protected $fillable = [
         'name', 'type', 'description', 'address', 'neighborhood', 'city', 'region', 'latitude',
         'longitude', 'phone', 'image', 'opening_hours', 'services', 'languages', 'is_free',
-        'is_confidential', 'is_accessible', 'walk_in', 'audience', 'is_emergency', 'is_active', 'verified_at',
+        'is_confidential', 'is_accessible', 'walk_in', 'audience', 'is_emergency', 'is_active', 'verified_at', 'position_confirmed',
     ];
 
     protected function casts(): array
@@ -35,6 +35,7 @@ class Resource extends Model
             'is_emergency' => 'boolean',
             'is_active' => 'boolean',
             'verified_at' => 'date:Y-m-d',
+            'position_confirmed' => 'boolean',
         ];
     }
 
