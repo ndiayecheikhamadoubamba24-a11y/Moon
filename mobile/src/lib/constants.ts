@@ -1,3 +1,5 @@
+export const AVATARS = ['🌸', '🦋', '🌙', '⭐', '🌻', '🐱', '🦄', '🌈', '🍓', '🐼', '🌺', '💫'];
+
 export const BADGE_ICONS: Record<string, string> = { star: '⭐', heart: '💖', trophy: '🏆', flame: '🔥', crown: '👑', book: '📚' };
 
 export const HELP_TYPES = [

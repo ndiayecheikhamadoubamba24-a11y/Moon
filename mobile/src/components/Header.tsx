@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '../lib/theme';
-import { MoonIcon } from './Moon';
+import { BrandBadge } from './Brand';
 import { T } from './ui';
 
 /** En-tête violet nuit avec lune, titre et actions. */
@@ -18,7 +18,7 @@ export function NightHeader({ title, subtitle, right, back, children }: { title:
             <Ionicons name="chevron-back" size={26} color={colors.white} />
           </Pressable>
         ) : (
-          <MoonIcon size={34} />
+          <BrandBadge size={38} />
         )}
         <View style={{ flex: 1, marginLeft: space.md }}>
           <T weight="black" size={21} color={colors.white}>

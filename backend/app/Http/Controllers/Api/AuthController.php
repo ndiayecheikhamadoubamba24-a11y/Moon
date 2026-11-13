@@ -28,6 +28,7 @@ class AuthController extends Controller
             'age_range' => ['required', Rule::in(User::AGE_RANGES)],
             'language' => ['nullable', Rule::in(['fr', 'wo'])],
             'mode' => ['nullable', Rule::in(['suivi', 'comprendre'])],
+            'avatar' => ['nullable', 'string', 'max:16'],
             'consent' => ['accepted'],
             'guardian_consent' => [Rule::requiredIf(fn () => in_array($request->input('age_range'), ['12-14', '15-17'], true)), 'boolean'],
             'device_name' => ['nullable', 'string', 'max:100'],
@@ -40,7 +41,7 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            ...collect($data)->only(['name', 'email', 'phone', 'password', 'age_range', 'language', 'mode'])->filter()->all(),
+            ...collect($data)->only(['name', 'email', 'phone', 'password', 'age_range', 'language', 'mode', 'avatar'])->filter()->all(),
             'consented_at' => now(),
             'guardian_consent' => $request->boolean('guardian_consent'),
         ]);

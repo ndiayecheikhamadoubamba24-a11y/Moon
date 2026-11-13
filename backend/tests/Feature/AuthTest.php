@@ -14,10 +14,12 @@ class AuthTest extends TestCase
     {
         $this->postJson('/api/v1/auth/register', [
             'name' => 'Awa', 'email' => 'awa@example.com', 'password' => 'secret123',
-            'age_range' => '18-21', 'consent' => true,
+            'age_range' => '18-21', 'consent' => true, 'avatar' => '🦋', 'mode' => 'comprendre',
         ])->assertCreated()->assertJsonStructure(['token', 'user' => ['id', 'name']]);
 
         $this->assertNotNull(User::first()->consented_at);
+        $this->assertSame('🦋', User::first()->avatar);
+        $this->assertSame('comprendre', User::first()->mode);
     }
 
     public function test_minor_requires_guardian_consent(): void

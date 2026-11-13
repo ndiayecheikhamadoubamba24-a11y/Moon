@@ -51,7 +51,13 @@ export default function HomeScreen() {
         right={
           <>
             <HeaderIcon name="notifications-outline" label="Notifications" onPress={() => router.push('/help')} />
-            <HeaderIcon name="person-circle-outline" label="Mon profil" onPress={() => router.push('/profile')} />
+            {user?.avatar ? (
+              <Pressable onPress={() => router.push('/profile')} style={s.avatar} accessibilityLabel="Mon profil">
+                <T size={22}>{user.avatar}</T>
+              </Pressable>
+            ) : (
+              <HeaderIcon name="person-circle-outline" label="Mon profil" onPress={() => router.push('/profile')} />
+            )}
           </>
         }
       />
@@ -249,6 +255,7 @@ function ActionTile({ icon, label, onPress, color }: { icon: keyof typeof Ionico
 }
 
 const s = StyleSheet.create({
+  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', marginLeft: space.md },
   week: { flexDirection: 'row', marginTop: space.lg },
   weekDay: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', marginTop: 6, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   dot: { width: 6, height: 6, borderRadius: 3, marginTop: 4 },

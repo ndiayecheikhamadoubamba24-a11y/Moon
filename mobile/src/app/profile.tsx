@@ -2,11 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Linking, Modal, Pressable, Share, Switch, TextInput, View } from 'react-native';
+import { PartnersStrip } from '../components/Brand';
 import { NightHeader } from '../components/Header';
 import { Button, Card, Disclaimer, Field, Screen, SectionTitle, Segmented, T } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useLock } from '../context/LockContext';
 import { api, errorMessage } from '../lib/api';
+import { AVATARS } from '../lib/constants';
 import { useApi } from '../lib/hooks';
 import { registerForPush } from '../lib/notifications';
 import { colors, space } from '../lib/theme';
@@ -76,6 +78,23 @@ export default function Profile() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <NightHeader title="Mon profil" subtitle={`⭐ ${user.points} pts · 🔥 ${user.streak_days} jours`} back />
       <Screen edges={['bottom']}>
+        <Card style={{ marginBottom: space.md }}>
+          <T weight="bold" size={14} style={{ marginBottom: space.sm }}>
+            Mon avatar
+          </T>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {AVATARS.map((a) => (
+              <Pressable
+                key={a}
+                onPress={() => save({ avatar: a })}
+                accessibilityLabel={`Avatar ${a}`}
+                style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: user.avatar === a ? colors.purple : colors.border, backgroundColor: user.avatar === a ? colors.lavender : colors.white }}
+              >
+                <T size={24}>{a}</T>
+              </Pressable>
+            ))}
+          </View>
+        </Card>
         <Card>
           <Field label="Prénom ou pseudo" value={name} onChangeText={setName} onEndEditing={() => name.trim() && name !== user.name && save({ name: name.trim() })} />
           <T weight="bold" size={14} style={{ marginBottom: 6 }}>
@@ -144,6 +163,9 @@ export default function Profile() {
           <Link icon="globe-outline" label="Politique de confidentialité" onPress={() => Linking.openURL('https://moon.example.org/confidentialite')} />
         </Card>
 
+        <View style={{ marginTop: space.xl }}>
+          <PartnersStrip title="Avec le soutien de" compact />
+        </View>
         <Button title="Me déconnecter" variant="outline" icon="log-out-outline" style={{ marginTop: space.xl }} onPress={signOut} />
         <Disclaimer />
       </Screen>

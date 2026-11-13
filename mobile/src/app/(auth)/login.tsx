@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
+import { PopIn } from '../../components/anim';
+import { MOON_LOGO } from '../../components/Brand';
 import { NightHeader } from '../../components/Header';
 import { Button, Field, Screen, Segmented, T } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
@@ -38,6 +40,9 @@ export default function Login() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <NightHeader title="Me connecter" subtitle="Content de te revoir 🌙" back />
       <Screen edges={[]}>
+        <PopIn spring style={{ alignItems: 'center', marginBottom: space.lg }}>
+          <Image source={MOON_LOGO} style={{ width: 110, height: 136 }} resizeMode="contain" accessibilityLabel="Moon" />
+        </PopIn>
         <Segmented
           options={[
             { value: 'phone', label: 'Téléphone' },
