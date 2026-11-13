@@ -7,8 +7,8 @@ export const MOON_MARK = require('../../assets/brand/moon-mark.png');
 
 export const PARTNERS = [
   { key: 'mjs', name: 'Ministère de la Jeunesse et des Sports', logo: require('../../assets/partners/mjs.png'), ratio: 1.84 },
-  { key: 'dpsj', name: 'Direction de la Protection Sociale des Jeunes', logo: require('../../assets/partners/dpsj.png'), ratio: 1.04 },
   { key: 'unfpa', name: 'UNFPA', logo: require('../../assets/partners/unfpa.png'), ratio: 2.13 },
+  { key: 'dpsj', name: 'Direction de la Protection Sociale des Jeunes', logo: require('../../assets/partners/dpsj.png'), ratio: 1.04 },
 ];
 
 /** Pictogramme Moon dans une pastille blanche (lisible sur les fonds violets). */
