@@ -44,6 +44,8 @@ export async function setToken(value: string | null) {
   else await secure.remove('token');
 }
 
+export const hasToken = () => !!token;
+
 export function setUnauthorizedHandler(fn: () => void) {
   onUnauthorized = fn;
 }

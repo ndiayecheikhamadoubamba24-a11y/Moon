@@ -16,7 +16,7 @@ class AuthController extends Controller
     public function __construct(private OtpService $otp) {}
 
     /**
-     * Inscription par e-mail (+ mot de passe) ou par téléphone (OTP).
+     * Inscription par téléphone ou par e-mail, avec mot de passe (pas de code SMS).
      */
     public function register(Request $request): JsonResponse
     {
@@ -24,7 +24,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:50'],
             'email' => ['required_without:phone', 'nullable', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['required_without:email', 'nullable', 'string', 'regex:/^\+?[0-9]{8,15}$/', 'unique:users,phone'],
-            'password' => ['required_with:email', 'nullable', 'string', 'min:8'],
+            'password' => ['required', 'string', 'min:8'],
             'age_range' => ['required', Rule::in(User::AGE_RANGES)],
             'language' => ['nullable', Rule::in(['fr', 'wo'])],
             'mode' => ['nullable', Rule::in(['suivi', 'comprendre'])],
@@ -46,26 +46,25 @@ class AuthController extends Controller
             'guardian_consent' => $request->boolean('guardian_consent'),
         ]);
 
-        if (empty($data['email'])) {
-            $this->otp->send($user->phone);
-
-            return response()->json(['otp_sent' => true, 'identifier' => $user->phone], 201);
-        }
-
         return response()->json($this->tokenResponse($user, $data['device_name'] ?? 'mobile'), 201);
     }
 
     public function login(Request $request): JsonResponse
     {
+        // Connexion avec un numéro de téléphone OU un e-mail (+ mot de passe).
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required_without_all:phone,identifier', 'nullable', 'email'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'identifier' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $user = User::where('email', $data['email'])->first();
+        $identifier = $this->normalize($data['identifier'] ?? $data['email'] ?? $data['phone'] ?? '');
+        $user = $this->findByIdentifier($identifier);
+        $field = isset($data['email']) ? 'email' : (isset($data['phone']) ? 'phone' : 'identifier');
         if (! $user || ! $user->password || ! Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages(['email' => 'E-mail ou mot de passe incorrect.']);
+            throw ValidationException::withMessages([$field => 'Identifiant ou mot de passe incorrect.']);
         }
         $this->ensureActive($user);
 

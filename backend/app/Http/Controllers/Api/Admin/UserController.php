@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Report;
 use App\Models\User;
-use App\Services\OtpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -159,21 +158,28 @@ class UserController extends Controller
     }
 
     /**
-     * Aider à retrouver l'accès : envoie un code de réinitialisation directement à la personne
-     * (l'équipe ne voit jamais son adresse) et/ou déconnecte tous ses appareils.
+     * Aider à retrouver l'accès (pas de code SMS) : génère un mot de passe temporaire,
+     * à transmettre à la personne après avoir vérifié son identité, et déconnecte ses appareils.
      */
-    public function resetAccess(Request $request, User $user, OtpService $otp): JsonResponse
+    public function resetAccess(Request $request, User $user): JsonResponse
     {
-        $data = $request->validate(['send_reset' => ['boolean'], 'unlock' => ['boolean']]);
-        if ($request->boolean('send_reset') && ($identifier = $user->email ?? $user->phone)) {
-            $otp->send($identifier, 'reset');
+        $request->validate(['temporary_password' => ['boolean'], 'unlock' => ['boolean']]);
+        $temporary = null;
+        if ($request->boolean('temporary_password', true)) {
+            // Lisible à l'oral : pas de caractères ambigus (0/O, 1/l)
+            $alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
+            $temporary = collect(range(1, 8))->map(fn () => $alphabet[random_int(0, strlen($alphabet) - 1)])->implode('');
+            $user->forceFill(['password' => $temporary])->save();
         }
-        if ($request->boolean('unlock')) {
-            $user->tokens()->delete();
-        }
-        AuditLog::record('user.access_reset', $user, $data);
+        $user->tokens()->delete();
+        AuditLog::record('user.access_reset', $user, ['temporary_password' => $temporary !== null]);
 
-        return response()->json(['message' => 'Le message a été envoyé directement à la personne.']);
+        return response()->json([
+            'temporary_password' => $temporary,
+            'message' => $temporary
+                ? 'Mot de passe temporaire créé. Transmets-le à la personne, puis elle pourra le changer dans son profil.'
+                : 'Tous les appareils ont été déconnectés.',
+        ]);
     }
 
     public function destroy(Request $request, User $user): JsonResponse

@@ -85,6 +85,18 @@ class AdminTest extends TestCase
         $this->assertFalse($user->fresh()->isSuspended());
     }
 
+    public function test_staff_can_give_a_temporary_password(): void
+    {
+        $moderator = User::factory()->staff('moderator')->create();
+        $user = User::factory()->create(['phone' => '+221770000009']);
+        $res = $this->actingAs($moderator)->postJson("/api/v1/admin/users/{$user->id}/reset-access", ['temporary_password' => true])->assertOk();
+        $temp = $res->json('temporary_password');
+        $this->assertSame(8, strlen($temp));
+
+        $this->app['auth']->forgetGuards();
+        $this->postJson('/api/v1/auth/login', ['phone' => '+221770000009', 'password' => $temp])->assertOk();
+    }
+
     public function test_dashboard_masks_small_groups(): void
     {
         User::factory()->count(6)->create(['age_range' => '15-17']);

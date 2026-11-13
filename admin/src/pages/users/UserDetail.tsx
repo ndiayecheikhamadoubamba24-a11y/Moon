@@ -146,7 +146,21 @@ export default function UserDetail() {
         confirmLabel="Réactiver"
         onConfirm={(reason) => act(`/admin/users/${u.id}/activate`, { reason })}
       />
-      <AccessModal open={modal === 'access'} onClose={() => setModal(null)} onConfirm={(b) => act(`/admin/users/${u.id}/reset-access`, b)} />
+      <AccessModal
+        open={modal === 'access'}
+        onClose={() => setModal(null)}
+        onConfirm={async (b) => {
+          try {
+            const r = await api<{ temporary_password: string | null; message: string }>(`/admin/users/${u.id}/reset-access`, { method: 'POST', body: b })
+            setMsg({ tone: 'mint', text: r.message })
+            return r.temporary_password
+          } catch (e) {
+            setMsg({ tone: 'danger', text: errorMessage(e) })
+            setModal(null)
+            return null
+          }
+        }}
+      />
       <DeleteModal open={modal === 'delete'} onClose={() => setModal(null)} onConfirm={(reason) => act(`/admin/users/${u.id}`, { reason, confirm: true }, 'DELETE', () => navigate('/utilisateurs'))} />
     </>
   )
@@ -238,27 +252,35 @@ function ReasonModal({ open, onClose, title, intro, icon, options, confirmLabel,
   )
 }
 
-function AccessModal({ open, onClose, onConfirm }: { open: boolean; onClose: () => void; onConfirm: (b: { send_reset: boolean; unlock: boolean }) => void }) {
-  const [sendReset, setSendReset] = useState(true)
-  const [unlock, setUnlock] = useState(false)
+function AccessModal({ open, onClose, onConfirm }: { open: boolean; onClose: () => void; onConfirm: (b: { temporary_password: boolean; unlock: boolean }) => Promise<string | null> }) {
+  const [temporary, setTemporary] = useState(true)
+  const [password, setPassword] = useState<string | null>(null)
+  const close = () => (setPassword(null), onClose())
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={close}
       title="Aider cette personne à retrouver son accès"
       footer={
-        <Button disabled={!sendReset && !unlock} onClick={() => onConfirm({ send_reset: sendReset, unlock })}>
-          Envoyer
-        </Button>
+        password ? (
+          <Button onClick={close}>Terminé</Button>
+        ) : (
+          <Button onClick={async () => setPassword(await onConfirm({ temporary_password: temporary, unlock: true }))}>Valider</Button>
+        )
       }
     >
-      <div className="space-y-3">
-        <Checkbox checked={sendReset} onChange={setSendReset} label="Envoyer un code de réinitialisation" />
-        <div>
-          <Checkbox checked={unlock} onChange={setUnlock} label="Déconnecter tous ses appareils" />
+      {password ? (
+        <div className="space-y-3 text-center">
+          <p className="text-sm font-bold">Mot de passe temporaire :</p>
+          <p className="rounded-2xl bg-lavender-soft py-4 font-mono text-3xl font-black tracking-widest select-all">{password}</p>
+          <Notice tone="gold">Transmets-le uniquement à la personne, après avoir vérifié son identité. Il ne sera plus affiché. Elle pourra le changer dans son profil.</Notice>
         </div>
-        <Notice>Le message est envoyé directement à la personne. Tu ne vois jamais son adresse ni son numéro.</Notice>
-      </div>
+      ) : (
+        <div className="space-y-3">
+          <Checkbox checked={temporary} onChange={setTemporary} label="Créer un mot de passe temporaire" />
+          <Notice>Tous ses appareils seront déconnectés. Vérifie d'abord l'identité de la personne (par exemple au centre ou par téléphone).</Notice>
+        </div>
+      )}
     </Modal>
   )
 }

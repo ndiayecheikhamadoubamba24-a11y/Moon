@@ -23,11 +23,11 @@ const BUBBLES = [
   "Salut ! Moi c'est Moon 🌙 Comment veux-tu qu'on t'appelle ?",
   "Super ! Quel âge as-tu ? Ça m'aide à te donner les bons conseils.",
   'Tu veux suivre ton cycle, ou juste comprendre ?',
-  'Pour retrouver ton compte, il me faut un numéro ou un e-mail.',
+  'Pour retrouver ton compte : un numéro ou un e-mail, et un mot de passe secret.',
   'Dernière étape : ta vie privée, c\'est sacré 🔒',
 ];
 
-type Result = { token?: string; user?: User; otp_sent?: boolean; identifier?: string };
+type Result = { token: string; user: User };
 
 /** Inscription en 5 petites étapes, avec mascotte et célébration finale. */
 export default function Register() {
@@ -52,7 +52,7 @@ export default function Register() {
     form.name.trim().length >= 2,
     !!form.age_range,
     !!form.mode,
-    method === 'phone' ? form.phone.replace(/\D/g, '').length >= 8 : /\S+@\S+\.\S+/.test(form.email) && form.password.length >= 8,
+    (method === 'phone' ? form.phone.replace(/\D/g, '').length >= 8 : /\S+@\S+\.\S+/.test(form.email)) && form.password.length >= 8,
     form.consent && (!minor || form.guardian_consent),
   ][step];
 
@@ -71,7 +71,8 @@ export default function Register() {
           consent: form.consent,
           guardian_consent: form.guardian_consent,
           language: 'fr',
-          ...(method === 'email' ? { email: form.email.trim(), password: form.password } : { phone: form.phone.replace(/[\s.-]/g, '') }),
+          password: form.password,
+          ...(method === 'email' ? { email: form.email.trim() } : { phone: form.phone.replace(/[\s.-]/g, '') }),
         },
       });
       setDone(res);
@@ -93,7 +94,7 @@ export default function Register() {
   const back = () => (step > 0 ? setStep(step - 1) : router.back());
   const err = (k: string) => errors[k]?.[0];
 
-  if (done) return <Celebration name={form.name} avatar={form.avatar} result={done} onContinue={() => (done.token && done.user ? signIn(done.token, done.user) : router.replace({ pathname: '/otp', params: { identifier: done.identifier } }))} />;
+  if (done) return <Celebration name={form.name} avatar={form.avatar} onContinue={() => signIn(done.token, done.user)} />;
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -188,19 +189,15 @@ export default function Register() {
               />
               <View style={{ height: space.lg }} />
               {method === 'phone' ? (
-                <>
-                  <Field label="Numéro de téléphone" value={form.phone} onChangeText={(v) => set('phone', v)} placeholder="+221 77 123 45 67" keyboardType="phone-pad" error={err('phone')} />
-                  <T size={13} color={colors.textMuted}>
-                    Tu recevras un code par SMS pour confirmer. Pas de mot de passe à retenir !
-                  </T>
-                </>
+                <Field label="Numéro de téléphone" value={form.phone} onChangeText={(v) => set('phone', v)} placeholder="+221 77 123 45 67" keyboardType="phone-pad" error={err('phone')} />
               ) : (
-                <>
-                  <Field label="E-mail" value={form.email} onChangeText={(v) => set('email', v)} placeholder="toi@exemple.com" keyboardType="email-address" autoCapitalize="none" error={err('email')} />
-                  <Field label="Mot de passe (8 caractères minimum)" value={form.password} onChangeText={(v) => set('password', v)} secureTextEntry error={err('password')} />
-                  <PasswordMeter value={form.password} />
-                </>
+                <Field label="E-mail" value={form.email} onChangeText={(v) => set('email', v)} placeholder="toi@exemple.com" keyboardType="email-address" autoCapitalize="none" error={err('email')} />
               )}
+              <Field label="Mot de passe (8 caractères minimum)" value={form.password} onChangeText={(v) => set('password', v)} secureTextEntry error={err('password')} />
+              <PasswordMeter value={form.password} />
+              <T size={13} color={colors.textMuted} style={{ marginTop: space.md }}>
+                🤫 Garde ton mot de passe secret : il protège tes données.
+              </T>
             </>
           )}
 
@@ -235,7 +232,7 @@ export default function Register() {
         ) : null}
 
         <Button
-          title={step < STEPS.length - 1 ? 'Continuer' : method === 'phone' ? 'Recevoir mon code' : 'Créer mon compte'}
+          title={step < STEPS.length - 1 ? 'Continuer' : 'Créer mon compte'}
           icon={step < STEPS.length - 1 ? 'arrow-forward' : 'sparkles'}
           onPress={next}
           loading={loading}
@@ -315,7 +312,7 @@ function PasswordMeter({ value }: { value: string }) {
 }
 
 /** Écran de fête une fois le compte créé. */
-function Celebration({ name, avatar, result, onContinue }: { name: string; avatar: string; result: Result; onContinue: () => void }) {
+function Celebration({ name, avatar, onContinue }: { name: string; avatar: string; onContinue: () => void }) {
   const [burst, setBurst] = useState(1);
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.night, alignItems: 'center', justifyContent: 'center', padding: space.xl }]}>
@@ -335,11 +332,11 @@ function Celebration({ name, avatar, result, onContinue }: { name: string; avata
       </PopIn>
       <PopIn delay={500}>
         <T size={16} color="#E5DBFF" style={{ textAlign: 'center', marginTop: space.sm, lineHeight: 23 }}>
-          {result.otp_sent ? `Presque fini ! On t'a envoyé un code au ${result.identifier}.` : 'Ton compte est prêt. On commence ?'}
+          Ton compte est prêt. On commence ?
         </T>
       </PopIn>
       <PopIn delay={800} style={{ alignSelf: 'stretch', marginTop: space.xxl }}>
-        <Button title={result.otp_sent ? 'Saisir mon code' : "C'est parti !"} icon="rocket" onPress={onContinue} />
+        <Button title="C'est parti !" icon="rocket" onPress={onContinue} />
       </PopIn>
     </View>
   );

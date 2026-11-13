@@ -37,19 +37,20 @@ class AuthTest extends TestCase
         ])->assertJsonValidationErrors('consent');
     }
 
-    public function test_phone_registration_and_otp_login(): void
+    public function test_phone_registration_with_password_logs_in_directly(): void
     {
         $this->postJson('/api/v1/auth/register', [
             'name' => 'Khady', 'phone' => '+221770000001', 'age_range' => '22-25', 'consent' => true,
-        ])->assertCreated()->assertJson(['otp_sent' => true]);
+        ])->assertJsonValidationErrors('password');
 
-        $code = cache()->get('otp_debug:+221770000001');
-        $this->postJson('/api/v1/auth/otp/verify', ['identifier' => '+221 77 000 00 01', 'code' => '000000'])
-            ->assertJsonValidationErrors('code');
-        $this->postJson('/api/v1/auth/otp/verify', ['identifier' => '+221770000001', 'code' => $code])
-            ->assertOk()->assertJsonStructure(['token']);
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Khady', 'phone' => '+221770000001', 'password' => 'secret123', 'age_range' => '22-25', 'consent' => true,
+        ])->assertCreated()->assertJsonStructure(['token', 'user' => ['id', 'name']])->assertJsonMissing(['otp_sent' => true]);
 
-        $this->assertNotNull(User::first()->phone_verified_at);
+        // Connexion par téléphone (avec espaces) ou via le champ « identifier »
+        $this->postJson('/api/v1/auth/login', ['phone' => '+221 77 000 00 01', 'password' => 'secret123'])->assertOk()->assertJsonStructure(['token']);
+        $this->postJson('/api/v1/auth/login', ['identifier' => '+221770000001', 'password' => 'secret123'])->assertOk();
+        $this->postJson('/api/v1/auth/login', ['phone' => '+221770000001', 'password' => 'mauvais'])->assertJsonValidationErrors('phone');
     }
 
     public function test_login_and_suspended_account(): void

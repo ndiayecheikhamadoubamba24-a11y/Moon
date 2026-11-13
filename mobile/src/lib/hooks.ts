@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { cachedGet, errorMessage } from './api';
+import { cachedGet, errorMessage, hasToken } from './api';
 
 /** Charge une ressource avec cache hors ligne ; se recharge à chaque retour sur l'écran. */
 export function useApi<T = any>(path: string | null) {
@@ -13,7 +13,7 @@ export function useApi<T = any>(path: string | null) {
   useEffect(() => () => void (mounted.current = false), []);
 
   const reload = useCallback(async () => {
-    if (!path) return;
+    if (!path || !hasToken()) return; // déconnectée : pas d'appel (évite des 401 inutiles)
     setLoading(true);
     try {
       const res = await cachedGet<T>(path);

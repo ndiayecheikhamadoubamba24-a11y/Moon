@@ -27,6 +27,7 @@ export default function Profile() {
   const reminders = useApi<Reminder[]>('/reminders');
   const [name, setName] = useState(user?.name ?? '');
   const [pinModal, setPinModal] = useState(false);
+  const [pwdModal, setPwdModal] = useState(false);
   const [message, setMessage] = useState('');
 
   if (!user) return null;
@@ -151,6 +152,7 @@ export default function Profile() {
 
         <SectionTitle title="Mes données" />
         <Card style={{ gap: 4 }}>
+          <Link icon="key-outline" label="Changer mon mot de passe" onPress={() => setPwdModal(true)} />
           <Link icon="calendar-outline" label="Corriger mes dates de règles" onPress={() => router.push('/periods')} />
           <Link icon="download-outline" label="Exporter mes données" onPress={exportData} />
           <Link icon="trash-outline" label="Supprimer mon compte" danger onPress={deleteAccount} />
@@ -169,6 +171,15 @@ export default function Profile() {
         <Button title="Me déconnecter" variant="outline" icon="log-out-outline" style={{ marginTop: space.xl }} onPress={signOut} />
         <Disclaimer />
       </Screen>
+      <PasswordModal
+        visible={pwdModal}
+        onClose={() => setPwdModal(false)}
+        onSave={async (password) => {
+          await updateUser({ password, password_confirmation: password });
+          setPwdModal(false);
+          setMessage('Mot de passe modifié ✓');
+        }}
+      />
       <PinModal
         visible={pinModal}
         onClose={() => setPinModal(false)}
@@ -206,6 +217,45 @@ function Link({ icon, label, onPress, danger }: { icon: keyof typeof Ionicons.gl
       </T>
       <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </Pressable>
+  );
+}
+
+function PasswordModal({ visible, onClose, onSave }: { visible: boolean; onClose: () => void; onSave: (password: string) => Promise<void> }) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const valid = password.length >= 8 && password === confirm;
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(43,24,88,0.5)', justifyContent: 'center', padding: space.xl }}>
+        <Card>
+          <T weight="black" size={19} style={{ marginBottom: space.md }}>
+            Nouveau mot de passe
+          </T>
+          <Field label="Mot de passe (8 caractères minimum)" value={password} onChangeText={setPassword} secureTextEntry />
+          <Field label="Confirme le mot de passe" value={confirm} onChangeText={setConfirm} secureTextEntry error={confirm && confirm !== password ? 'Les deux mots de passe sont différents.' : undefined} />
+          {error ? <T color={colors.red}>{error}</T> : null}
+          <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.md }}>
+            <Button title="Annuler" variant="outline" style={{ flex: 1 }} onPress={onClose} />
+            <Button
+              title="Enregistrer"
+              style={{ flex: 1 }}
+              disabled={!valid}
+              onPress={async () => {
+                setError('');
+                try {
+                  await onSave(password);
+                  setPassword('');
+                  setConfirm('');
+                } catch (e) {
+                  setError(errorMessage(e));
+                }
+              }}
+            />
+          </View>
+        </Card>
+      </View>
+    </Modal>
   );
 }
 
