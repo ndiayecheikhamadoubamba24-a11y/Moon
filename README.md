@@ -10,7 +10,7 @@ suivi du cycle, conseils personnalisés, modules éducatifs, jeux, espace d'aide
 | Dossier | Contenu | État |
 |---|---|---|
 | `backend/` | API Laravel 13 + Sanctum. PostgreSQL en production, SQLite en local et pour les tests | ✅ V1 |
-| `mobile/` | Application React Native / Expo | à venir |
+| `mobile/` | Application React Native / Expo (voir `mobile/README.md`) | ✅ V1 |
 | `admin/` | Back-office React (Vite, Tailwind, Recharts) | à venir |
 | `docs/` | Documentation de l'API | ✅ |
 

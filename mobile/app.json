@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "Moon",
+    "slug": "moon",
+    "scheme": "moon",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2B1858"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "org.moon.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Moon utilise ta position uniquement pour trouver les centres proches de toi. Elle n'est jamais enregistrée.",
+        "NSFaceIDUsageDescription": "Moon utilise Face ID pour protéger l'accès à tes données."
+      }
+    },
+    "android": {
+      "package": "org.moon.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#2B1858",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Moon utilise Face ID pour protéger l'accès à tes données."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Moon utilise ta position uniquement pour trouver les centres proches de toi."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#EC5F8C"
+        }
+      ],
+      [
+        "react-native-maps",
+        {
+          "androidGoogleMapsApiKey": "REMPLACER_PAR_LA_CLE_GOOGLE_MAPS"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "apiUrl": "http://10.0.2.2:8000/api/v1"
+    }
+  }
+}
