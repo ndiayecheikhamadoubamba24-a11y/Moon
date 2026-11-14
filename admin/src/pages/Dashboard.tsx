@@ -59,7 +59,7 @@ export default function Dashboard() {
                 <td className="w-40 px-3 py-2">
                   <div className="flex items-center gap-2">
                     <Meter value={m.completion_rate} tone="mint" />
-                    <span className="text-xs font-bold">{m.completion_rate} %</span>
+                    <span className="text-xs font-bold whitespace-nowrap">{m.completion_rate} %</span>
                   </div>
                 </td>
               </tr>

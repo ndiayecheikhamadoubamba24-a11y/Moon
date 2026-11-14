@@ -1,0 +1,813 @@
+<title>Guide d'utilisation Moon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap">
+<style>
+  /* Mise en page : barre de navigation collante (deux publics), sommaire latéral sur grand écran, contenu en colonne de lecture avec captures dans des cadres de téléphone ou de navigateur. */
+  :root {
+    --night: #2b1858;
+    --bg: #fbf8ff;
+    --surface: #ffffff;
+    --surface-2: #f3eefc;
+    --line: #e4dcf5;
+    --fg: #2b1858;
+    --muted: #675d86;
+    --accent: #e14f80;
+    --accent-soft: #fde4ec;
+    --gold: #f5b85c;
+    --gold-soft: #fef3df;
+    --mint: #2f9e63;
+    --mint-soft: #e3f6ec;
+    --danger: #d43d43;
+    --danger-soft: #fdecec;
+    --lilac: #d9ccf5;
+    --frame: #2b1858;
+    --font: 'Nunito', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+    --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161027; --surface: #1f1736; --surface-2: #2a2047; --line: #3a2e5e; --fg: #f1ecff; --muted: #b5aad6;
+      --accent: #f2779f; --accent-soft: #3d1d33; --gold: #f5c37a; --gold-soft: #3a2d17; --mint: #5fd093; --mint-soft: #173426;
+      --danger: #ff7b7f; --danger-soft: #3b1a1d; --lilac: #4c3c7d; --frame: #0d0918; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161027; --surface: #1f1736; --surface-2: #2a2047; --line: #3a2e5e; --fg: #f1ecff; --muted: #b5aad6;
+    --accent: #f2779f; --accent-soft: #3d1d33; --gold: #f5c37a; --gold-soft: #3a2d17; --mint: #5fd093; --mint-soft: #173426;
+    --danger: #ff7b7f; --danger-soft: #3b1a1d; --lilac: #4c3c7d; --frame: #0d0918; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: calc(76px + env(safe-area-inset-top, 0px)); }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.6; }
+
+  /* Bandeau supérieur */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--night); }
+  .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: var(--night); color: #fff; }
+  .topbar-in { max-width: 1200px; margin: 0 auto; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 20px; color: #fff; text-decoration: none; }
+  .brand img { width: 34px; height: 34px; border-radius: 50%; background: #fff; padding: 4px; }
+  .audience { display: flex; gap: 6px; margin-left: auto; background: rgba(255,255,255,.1); border-radius: 999px; padding: 4px; }
+  .audience a { color: #fff; text-decoration: none; font-weight: 800; font-size: 14px; padding: 6px 14px; border-radius: 999px; }
+  .audience a:hover, .audience a:focus-visible { background: rgba(255,255,255,.16); }
+  .audience a.active { background: var(--accent); }
+
+  /* Couverture */
+  .cover { background: linear-gradient(160deg, #2b1858 0%, #4a2c8f 60%, #7b4fc4 100%); color: #fff; }
+  .cover-in { max-width: 1200px; margin: 0 auto; padding-block: 48px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+  .cover h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.05; margin: 0 0 12px; font-weight: 900; text-wrap: balance; }
+  .cover p.lead { font-size: 18px; color: #e5dbff; margin: 0 0 24px; max-width: 34em; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .meta span { background: rgba(255,255,255,.12); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; }
+  .doors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .door { display: block; background: #fff; color: var(--night); border-radius: 20px; padding: 16px 18px; text-decoration: none; transition: transform .15s; }
+  .door:hover, .door:focus-visible { transform: translateY(-2px); }
+  .door b { display: block; font-size: 18px; font-weight: 900; }
+  .door span { font-size: 14px; color: #5b4f80; }
+  .cover-art { display: flex; justify-content: center; gap: 14px; }
+  .cover-art .phone { width: 46%; max-width: 210px; }
+  .cover-art .phone:nth-child(2) { transform: translateY(26px); }
+  .partners { background: #fff; border-radius: 18px; padding: 12px 16px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 28px; }
+  .partners small { color: #675d86; font-weight: 700; flex-basis: 100%; }
+  .partners img { height: 40px; width: auto; }
+
+  /* Corps : sommaire + contenu */
+  .layout { max-width: 1200px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px; }
+  nav.toc { position: sticky; top: calc(76px + env(safe-area-inset-top, 0px)); align-self: start; max-height: calc(100vh - 100px); overflow: auto; font-size: 14px; }
+  .toc h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 6px; }
+  .toc h2:first-child { margin-top: 0; }
+  .toc a { display: block; color: var(--fg); text-decoration: none; padding: 4px 10px; border-radius: 8px; font-weight: 700; }
+  .toc a:hover, .toc a:focus-visible { background: var(--surface-2); }
+  .toc a.on { background: var(--accent-soft); color: var(--accent); }
+  main { min-width: 0; }
+
+  .part-head { border-radius: 24px; padding: 24px; margin: 8px 0 24px; background: var(--surface-2); display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .part-head .tag { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 900; color: var(--accent); }
+  .part-head h2 { margin: 2px 0 4px; font-size: clamp(26px, 3.4vw, 34px); font-weight: 900; line-height: 1.15; text-wrap: balance; }
+  .part-head p { margin: 0; color: var(--muted); max-width: 48em; }
+
+  section.chap { padding-block: 28px; border-bottom: 1px solid var(--line); }
+  section.chap:last-of-type { border-bottom: 0; }
+  h3 { font-size: 24px; font-weight: 900; margin: 0 0 6px; line-height: 1.2; text-wrap: balance; }
+  h4 { font-size: 17px; font-weight: 900; margin: 22px 0 6px; }
+  p, li { max-width: 66ch; }
+  .intro { color: var(--muted); margin-top: 0; }
+  ul, ol { padding-left: 1.3em; }
+  li { margin: 4px 0; }
+  strong { font-weight: 800; }
+  .ui { font-weight: 800; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 0 6px; white-space: nowrap; }
+
+  .steps { list-style: none; padding: 0; counter-reset: s; display: grid; gap: 10px; margin: 14px 0; }
+  .steps > li { counter-increment: s; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; max-width: none; }
+  .steps > li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; background: var(--night); color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 15px; }
+  :root[data-theme="dark"] .steps > li::before { background: var(--accent); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .steps > li::before { background: var(--accent); } }
+
+  /* Captures */
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px; margin: 18px 0 8px; }
+  .shots.wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); }
+  figure { margin: 0; min-width: 0; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; text-align: center; line-height: 1.4; }
+  .phone { background: var(--frame); border-radius: 30px; padding: 7px; box-shadow: 0 10px 28px rgba(43,24,88,.18); }
+  .phone img { display: block; width: 100%; border-radius: 24px; aspect-ratio: 390 / 844; object-fit: cover; object-position: top; background: #fbf8ff; }
+  .browser { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 28px rgba(43,24,88,.12); }
+  .browser .bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .browser .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--lilac); display: inline-block; }
+  .browser .bar span { margin-left: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .browser img { display: block; width: 100%; aspect-ratio: 1440 / 900; object-fit: cover; object-position: top left; background: #f8f5fe; }
+  a.zoom { display: block; border-radius: inherit; }
+  a.zoom:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  /* Encadrés */
+  .note { border-radius: 16px; padding: 12px 16px; margin: 16px 0; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; font-size: 15px; }
+  .note p { margin: 0; max-width: none; }
+  .note .i { font-size: 18px; line-height: 1.4; }
+  .note.tip { background: var(--surface-2); }
+  .note.warn { background: var(--gold-soft); }
+  .note.privacy { background: var(--mint-soft); }
+  .note.danger { background: var(--danger-soft); }
+
+  /* Légende du calendrier */
+  .legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 14px 0; padding: 0; list-style: none; }
+  .legend li { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px; margin: 0; max-width: none; font-size: 15px; }
+  .dot { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 900; font-size: 13px; }
+  .d-period { background: #ec5f8c; color: #fff; }
+  .d-fertile { background: #d9ccf5; color: #2b1858; border-radius: 10px; width: 40px; }
+  .d-ovul { background: #f5b85c; color: #2b1858; }
+  .d-pred { border: 2px dashed #ec5f8c; color: #ec5f8c; }
+  .d-today { border: 2.5px solid var(--fg); color: var(--fg); }
+  .d-log { position: relative; color: var(--fg); }
+  .d-log::after { content: ""; position: absolute; bottom: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--fg); }
+
+  /* Tableaux */
+  .tablewrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 16px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 560px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 900; font-size: 13px; }
+  tr:last-child td { border-bottom: 0; }
+  td.y { color: var(--mint); font-weight: 900; text-align: center; }
+  td.n { color: var(--muted); text-align: center; }
+  pre { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 12px 0; }
+  code { font-family: var(--mono); font-size: .92em; }
+
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; margin: 8px 0; }
+  details summary { cursor: pointer; font-weight: 800; }
+  details p { margin: 8px 0 2px; }
+
+  footer.end { text-align: center; color: var(--muted); font-size: 13px; padding-block: 24px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+  /* Visionneuse */
+  .lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(13,9,24,.86); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .lightbox[hidden] { display: none; }
+  .lightbox img { max-width: 100%; max-height: 86vh; border-radius: 16px; background: #fff; }
+  .lightbox p { color: #fff; text-align: center; margin: 10px auto 0; font-weight: 700; }
+  .lightbox button { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); background: #fff; color: #2b1858; border: 0; border-radius: 999px; padding: 8px 14px; font: 800 14px var(--font); cursor: pointer; }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+    nav.toc { display: none; }
+    .cover-in { grid-template-columns: minmax(0, 1fr); }
+    .cover-art { display: none; }
+  }
+  @media (max-width: 560px) {
+    .doors { grid-template-columns: minmax(0, 1fr); }
+    .audience { margin-left: 0; }
+    .shots { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .phone { border-radius: 22px; padding: 5px; }
+    .phone img { border-radius: 18px; }
+  }
+</style>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#haut"><img src="img/moon-mark.png" alt="">Guide Moon</a>
+    <div class="audience" role="navigation" aria-label="Choisir une partie">
+      <a href="#app-mobile" data-part="mobile">📱 Application mobile</a>
+      <a href="#back-office" data-part="web">💻 Back-office web</a>
+    </div>
+  </div>
+</header>
+
+<div class="cover" id="haut">
+  <div class="cover-in">
+    <div>
+      <h1>Guide d'utilisation de Moon</h1>
+      <p class="lead">Tout ce qu'il faut savoir pour utiliser l'application mobile Moon et le back-office de l'équipe : suivi du cycle, apprentissage, jeux, aide, centres partenaires et gestion des contenus.</p>
+      <div class="meta"><span>Version 1.0</span><span>Novembre 2026</span><span>Android · navigateur web</span></div>
+      <div class="doors">
+        <a class="door" href="#app-mobile"><b>📱 Je suis utilisatrice</b><span>Créer mon compte, suivre mon cycle, apprendre, jouer, demander de l'aide.</span></a>
+        <a class="door" href="#back-office"><b>💻 Je fais partie de l'équipe</b><span>Publier des modules et des jeux, répondre aux demandes, gérer les centres et les comptes.</span></a>
+      </div>
+      <div class="partners">
+        <small>Une initiative soutenue par</small>
+        <img src="img/partners/mjs.png" alt="Ministère de la Jeunesse et des Sports">
+        <img src="img/partners/unfpa.png" alt="UNFPA">
+        <img src="img/partners/dpsj.png" alt="Direction de la Protection Sociale des Jeunes">
+      </div>
+    </div>
+    <div class="cover-art" aria-hidden="true">
+      <div class="phone"><img src="img/mobile/01-page-de-garde.jpg" alt=""></div>
+      <div class="phone"><img src="img/mobile/20-accueil.jpg" alt=""></div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="toc" aria-label="Sommaire">
+    <h2>Application mobile</h2>
+    <a href="#m-ouvrir">Ouvrir l'application</a>
+    <a href="#m-compte">Créer son compte</a>
+    <a href="#m-connexion">Se connecter</a>
+    <a href="#m-premier">Premier lancement</a>
+    <a href="#m-accueil">L'accueil</a>
+    <a href="#m-calendrier">Le calendrier</a>
+    <a href="#m-journal">Le journal</a>
+    <a href="#m-apprendre">Apprendre</a>
+    <a href="#m-jouer">Jouer</a>
+    <a href="#m-aide">Je suis là pour toi</a>
+    <a href="#m-centres">Trouver un centre</a>
+    <a href="#m-profil">Profil et confidentialité</a>
+    <a href="#m-horsligne">Sans Internet</a>
+    <a href="#m-faq">Questions fréquentes</a>
+    <h2>Back-office web</h2>
+    <a href="#w-acces">Accès et rôles</a>
+    <a href="#w-tableau">Tableau de bord</a>
+    <a href="#w-modules">Modules</a>
+    <a href="#w-jeux">Jeux et défis</a>
+    <a href="#w-conseils">Conseils et FAQ</a>
+    <a href="#w-demandes">Demandes d'aide</a>
+    <a href="#w-centres">Centres et contacts</a>
+    <a href="#w-signalements">Signalements</a>
+    <a href="#w-utilisateurs">Utilisateurs</a>
+    <a href="#w-annonces">Annonces</a>
+    <a href="#w-admin">Administration</a>
+    <a href="#w-pratiques">Bonnes pratiques</a>
+    <a href="#w-depannage">Dépannage</a>
+  </nav>
+
+  <main>
+    <!-- ===================================================== PARTIE 1 ===================================================== -->
+    <div class="part-head" id="app-mobile">
+      <div>
+        <div class="tag">Partie 1 · pour les jeunes</div>
+        <h2>L'application mobile</h2>
+        <p>Moon accompagne les filles et les jeunes femmes de 12 à 25 ans : suivre son cycle, savoir quoi faire chaque jour, apprendre en jouant et demander de l'aide sans gêne. Les garçons et les proches peuvent l'utiliser en mode « Comprendre ».</p>
+      </div>
+    </div>
+
+    <section class="chap" id="m-ouvrir">
+      <h3>Ouvrir l'application</h3>
+      <p class="intro">À chaque entrée dans l'app, une page de garde présente Moon et ses partenaires.</p>
+      <ul>
+        <li>La <strong>page de garde</strong> s'affiche à l'ouverture, et aussi au retour dans l'app après plus de 5 minutes. Elle se ferme seule après 3 secondes, ou tout de suite avec <span class="ui">Entrer</span>.</li>
+        <li>Si tu n'as pas encore de compte, tu arrives sur la <strong>page d'accueil</strong> : trois écrans défilent pour présenter l'app (tu peux aussi les faire glisser).</li>
+        <li>Touche le logo Moon : il se secoue et lance des cœurs et des étoiles. Continue, il te répond !</li>
+      </ul>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/01-page-de-garde.jpg" alt="Page de garde avec le logo Moon et les logos des partenaires" loading="lazy"></div><figcaption>Page de garde</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/02-accueil-public.jpg" alt="Page d'accueil avec la présentation de l'application" loading="lazy"></div><figcaption>Page d'accueil</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/03-logo-touche.jpg" alt="Le logo Moon lance des cœurs et des étoiles quand on le touche" loading="lazy"></div><figcaption>Le logo réagit quand on le touche</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="m-compte">
+      <h3>Créer son compte</h3>
+      <p class="intro">Depuis la page d'accueil, touche <span class="ui">Créer mon compte</span>. L'inscription se fait en cinq petites étapes ; Moon te guide dans une bulle.</p>
+      <ol class="steps">
+        <li><div><strong>Toi.</strong> Choisis un prénom ou un pseudo (ton vrai nom n'est pas nécessaire) et un avatar parmi les 12 proposés.</div></li>
+        <li><div><strong>Âge.</strong> Touche ta tranche d'âge. Si tu as moins de 18 ans, Moon te prévient qu'il faudra l'accord d'un parent ou d'un tuteur.</div></li>
+        <li><div><strong>Usage.</strong> <em>Suivre mon cycle</em> (calendrier, prévisions, journal) ou <em>Comprendre</em> (pour les garçons et les proches qui veulent s'informer).</div></li>
+        <li><div><strong>Compte.</strong> Ton numéro de téléphone <em>ou</em> ton e-mail, et un mot de passe d'au moins 8 caractères. La jauge t'indique s'il est solide.</div></li>
+        <li><div><strong>Vie privée.</strong> Lis l'explication, coche « J'accepte… » et, si tu as moins de 18 ans, l'accord de ton parent ou tuteur. Touche <span class="ui">Créer mon compte</span>.</div></li>
+      </ol>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/04-inscription-1.jpg" alt="Étape 1 : pseudo et avatar" loading="lazy"></div><figcaption>1. Pseudo et avatar</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/05-inscription-2.jpg" alt="Étape 2 : tranche d'âge" loading="lazy"></div><figcaption>2. Âge</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/06-inscription-3.jpg" alt="Étape 3 : suivre mon cycle ou comprendre" loading="lazy"></div><figcaption>3. Usage</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/07-inscription-4.jpg" alt="Étape 4 : téléphone ou e-mail et mot de passe" loading="lazy"></div><figcaption>4. Compte</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/08-inscription-5.jpg" alt="Étape 5 : consentement et accord parental" loading="lazy"></div><figcaption>5. Vie privée</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/09-bienvenue.jpg" alt="Écran de bienvenue avec confettis" loading="lazy"></div><figcaption>Bienvenue !</figcaption></figure>
+      </div>
+      <div class="note privacy"><span class="i">🔒</span><p>Tes données de cycle sont chiffrées et ne sont jamais montrées à l'équipe Moon. Tu peux les exporter ou les supprimer à tout moment depuis ton profil.</p></div>
+    </section>
+
+    <section class="chap" id="m-connexion">
+      <h3>Se connecter</h3>
+      <p class="intro">Sur la page d'accueil, touche <span class="ui">J'ai déjà un compte</span>.</p>
+      <ol class="steps">
+        <li><div>Choisis <span class="ui">📱 Téléphone</span> ou <span class="ui">✉️ E-mail</span>, selon ce que tu as donné à l'inscription. Le numéro peut s'écrire avec ou sans espaces, avec ou sans +221.</div></li>
+        <li><div>Saisis ton mot de passe et touche <span class="ui">Me connecter</span>.</div></li>
+      </ol>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/14-connexion.jpg" alt="Écran de connexion avec l'aide pour le mot de passe oublié" loading="lazy"></div><figcaption>Connexion et mot de passe oublié</figcaption></figure>
+      </div>
+      <h4>Mot de passe oublié</h4>
+      <p>Contacte l'équipe Moon ou rends-toi dans un centre partenaire. Après avoir vérifié que c'est bien toi, l'équipe te donne un <strong>mot de passe temporaire</strong>. Connecte-toi avec, puis change-le dans <span class="ui">Profil → Changer mon mot de passe</span>.</p>
+    </section>
+
+    <section class="chap" id="m-premier">
+      <h3>Premier lancement</h3>
+      <p class="intro">Juste après l'inscription, Moon te pose trois questions pour personnaliser tes prévisions. Tout se modifie plus tard.</p>
+      <ol class="steps">
+        <li><div><strong>Tes dernières règles.</strong> Touche <span class="ui">Ajouter ma date</span> et choisis le premier jour de tes dernières règles. Tu ne sais pas ? Touche <span class="ui">Je ne sais pas / plus tard</span>.</div></li>
+        <li><div><strong>Ton cycle.</strong> Durée de tes règles et de ton cycle. Si tu ne sais pas, garde 5 et 28 jours : Moon apprendra de ton historique.</div></li>
+        <li><div><strong>Tes rappels.</strong> Coche ceux que tu veux : 2 jours avant les règles, changement de protection, journal du soir. Les notifications restent discrètes.</div></li>
+      </ol>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/10-premier-lancement.jpg" alt="Dis-moi quand tes dernières règles ont commencé" loading="lazy"></div><figcaption>Bienvenue dans Moon</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/11-dernieres-regles.jpg" alt="Choix de la date des dernières règles" loading="lazy"></div><figcaption>Date des dernières règles</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/12-duree-cycle.jpg" alt="Durée des règles et du cycle" loading="lazy"></div><figcaption>Durées</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/13-rappels.jpg" alt="Choix des rappels" loading="lazy"></div><figcaption>Rappels</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="m-accueil">
+      <h3>L'accueil</h3>
+      <p class="intro">L'onglet <span class="ui">Accueil</span> résume ta journée en un coup d'œil.</p>
+      <ul>
+        <li><strong>L'anneau du cycle</strong> : le jour de ton cycle (par exemple « Jour 7 »), ta phase et le nombre de jours avant tes prochaines règles. Il devient rose pendant les règles. Touche-le pour ouvrir le calendrier.</li>
+        <li><strong>La semaine</strong> : les jours roses sont tes règles, les violets clairs ta période féconde, le doré l'ovulation estimée. Touche un jour pour voir sa fiche.</li>
+        <li><strong>Comment tu te sens aujourd'hui ?</strong> Touche un visage : ton humeur est enregistrée dans ton journal.</li>
+        <li><strong>Trois raccourcis</strong> : <span class="ui">Mes règles ont commencé</span> (ou <span class="ui">Mes règles sont terminées</span> pendant les règles), <span class="ui">Noter ma journée</span> et <span class="ui">Poser une question</span>.</li>
+        <li><strong>Tes conseils du jour</strong>, adaptés à ta phase, et <strong>Continue d'apprendre</strong> pour reprendre un module.</li>
+        <li><strong>Le défi du jour</strong> : une affirmation « Mythe ou réalité ? » à laquelle tu réponds en un geste.</li>
+      </ul>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/20-accueil.jpg" alt="Accueil : anneau du cycle, semaine et humeur" loading="lazy"></div><figcaption>Cycle, semaine et humeur</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/21-accueil-conseils.jpg" alt="Raccourcis et conseils du jour" loading="lazy"></div><figcaption>Raccourcis et conseils</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/22-accueil-defi.jpg" alt="Continue d'apprendre et défi du jour" loading="lazy"></div><figcaption>Défi du jour et aide</figcaption></figure>
+      </div>
+      <div class="note warn"><span class="i">⚠️</span><p>Pendant tes règles, un encadré rappelle : <em>Douleurs fortes ou inhabituelles ? Parles-en à un professionnel de santé.</em> Moon informe et ne remplace pas un avis médical.</p></div>
+    </section>
+
+    <section class="chap" id="m-calendrier">
+      <h3>Le calendrier</h3>
+      <p class="intro">L'onglet <span class="ui">Calendrier</span> est le cœur de l'app. Fais glisser vers la gauche ou la droite pour changer de mois ; <span class="ui">Aujourd'hui</span> te ramène au mois en cours ; <span class="ui">Année</span> montre les 12 mois d'un coup.</p>
+      <h4>Lire les couleurs</h4>
+      <ul class="legend">
+        <li><span class="dot d-period">3</span>Jours de règles (enregistrés)</li>
+        <li><span class="dot d-pred">29</span>Règles prévues (estimation)</li>
+        <li><span class="dot d-fertile">14</span>Période féconde (estimation)</li>
+        <li><span class="dot d-ovul">16</span>Ovulation estimée</li>
+        <li><span class="dot d-today">12</span>Aujourd'hui</li>
+        <li><span class="dot d-log">9</span>Un point sous le jour : note dans ton journal</li>
+      </ul>
+      <ul>
+        <li><strong>Marquer ses règles</strong> : touche <span class="ui">Mes règles ont commencé</span> le premier jour, puis <span class="ui">Mes règles sont terminées</span>. Tu as oublié ? Ouvre la fiche du jour concerné et touche <span class="ui">Mes règles ont commencé ce jour-là</span>.</li>
+        <li><strong>Fiche du jour</strong> : touche n'importe quel jour pour voir ta phase, le conseil du jour et ton journal.</li>
+        <li><strong>Corriger une date</strong> : dans la fiche du jour, touche <span class="ui">Corriger mes dates de règles</span> pour modifier ou supprimer un début ou une fin (une connexion Internet est nécessaire).</li>
+        <li><strong>Mon historique</strong>, en bas du calendrier, montre la durée moyenne de ton cycle et de tes règles. Un cycle inhabituel (moins de 21 ou plus de 35 jours) apparaît en rose.</li>
+      </ul>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/23-calendrier.jpg" alt="Calendrier du mois avec les couleurs du cycle" loading="lazy"></div><figcaption>Vue du mois</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/24-calendrier-annee.jpg" alt="Vue de l'année" loading="lazy"></div><figcaption>Vue de l'année</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/25-fiche-du-jour.jpg" alt="Fiche du jour avec la phase, le conseil et le journal" loading="lazy"></div><figcaption>Fiche du jour</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/27-corriger-dates.jpg" alt="Liste des dates de règles à corriger" loading="lazy"></div><figcaption>Corriger mes dates</figcaption></figure>
+      </div>
+      <div class="note tip"><span class="i">💡</span><p>Les prévisions s'améliorent avec le temps : plus tu enregistres de cycles, plus Moon calcule précisément la date de tes prochaines règles. Ce sont des estimations, pas une méthode de contraception.</p></div>
+    </section>
+
+    <section class="chap" id="m-journal">
+      <h3>Le journal</h3>
+      <p class="intro">Ouvre-le avec <span class="ui">Noter ma journée</span> sur l'accueil, ou depuis la fiche d'un jour.</p>
+      <ul>
+        <li><strong>Humeur</strong> (6 visages), <strong>flux</strong> (aucun, traces, léger, moyen, abondant) et <strong>douleur</strong> de 0 à 10.</li>
+        <li><strong>Symptômes</strong> : crampes, maux de tête, ballonnements, fatigue, boutons, etc.</li>
+        <li><strong>Notes</strong> : elles sont privées et chiffrées.</li>
+      </ul>
+      <p>Touche <span class="ui">Enregistrer</span>. Une douleur de 8/10 ou plus affiche un conseil pour consulter un professionnel de santé.</p>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/26-journal.jpg" alt="Journal du jour : humeur, flux, douleur, symptômes" loading="lazy"></div><figcaption>Journal du jour</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="m-apprendre">
+      <h3>Apprendre</h3>
+      <p class="intro">L'onglet <span class="ui">Apprendre</span> regroupe les contenus validés par l'équipe éducative.</p>
+      <ul>
+        <li><strong>Modules</strong> : de courts parcours à lire étape par étape. Utilise <span class="ui">Suivant</span> et <span class="ui">Précédent</span> ; ta progression est gardée. Un module terminé rapporte 20 points.</li>
+        <li><strong>Recherche et catégories</strong> en haut de l'écran (Comprendre son corps, Mythes et réalités, Hygiène…).</li>
+        <li><strong>Fiches pratiques</strong> : utiliser une serviette, une serviette lavable, un tampon, une cup, hygiène intime, fuite imprévue.</li>
+        <li><strong>Signaux à surveiller</strong> : douleurs très fortes, saignements anormaux, cycles très irréguliers.</li>
+        <li><strong>Questions fréquentes</strong> : les réponses de l'équipe, avec une recherche. Pas de réponse ? Pose une question anonyme.</li>
+      </ul>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/30-apprendre.jpg" alt="Liste des modules et fiches pratiques" loading="lazy"></div><figcaption>Modules et fiches</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/31-module.jpg" alt="Lecture d'un module, étape par étape" loading="lazy"></div><figcaption>Lire un module</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/32-faq.jpg" alt="Questions fréquentes" loading="lazy"></div><figcaption>Questions fréquentes</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="m-jouer">
+      <h3>Jouer</h3>
+      <p class="intro">L'onglet <span class="ui">Jouer</span> montre tes points, ta série de jours et le défi de la semaine.</p>
+      <h4>Les trois jeux</h4>
+      <ul>
+        <li><strong>Quiz</strong> : choisis la bonne réponse parmi A, B, C, D. Besoin d'un coup de pouce ? Touche <span class="ui">Indice</span>.</li>
+        <li><strong>Mythe ou réalité ?</strong> Une affirmation, deux boutons : <span class="ui">Mythe</span> ou <span class="ui">Réalité</span>.</li>
+        <li><strong>Association</strong> : touche un terme à gauche puis sa définition à droite, puis <span class="ui">Valider</span>.</li>
+      </ul>
+      <p>Après chaque réponse, l'encadré <strong>À retenir</strong> explique la bonne réponse. À la fin, l'écran « Bravo ! » montre ton score, tes points, ta série et tes nouveaux badges. Touche <span class="ui">Tes questions ratées</span> pour revoir les explications.</p>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/40-jouer.jpg" alt="Écran Jouer : série, défi de la semaine, jeux et badges" loading="lazy"></div><figcaption>Jouer</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/41-quiz.jpg" alt="Question de quiz avec indice" loading="lazy"></div><figcaption>Quiz et indice</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/42-bonne-reponse.jpg" alt="Bonne réponse et explication À retenir" loading="lazy"></div><figcaption>À retenir</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/43-mythe-realite.jpg" alt="Mythe ou réalité" loading="lazy"></div><figcaption>Mythe ou réalité ?</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/44-association.jpg" alt="Jeu d'association" loading="lazy"></div><figcaption>Association</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/45-resultat.jpg" alt="Résultat de la partie" loading="lazy"></div><figcaption>Résultat</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/46-badges.jpg" alt="Badges et classement" loading="lazy"></div><figcaption>Badges et classement</figcaption></figure>
+      </div>
+      <div class="note tip"><span class="i">🏆</span><p>Le <strong>classement</strong> est facultatif et anonyme : tu y apparais sous un alias (« Lune #1234 ») seulement si tu actives l'interrupteur en bas de l'écran Badges.</p></div>
+    </section>
+
+    <section class="chap" id="m-aide">
+      <h3>Je suis là pour toi</h3>
+      <p class="intro">L'onglet <span class="ui">Aide</span> te permet de demander de l'aide à l'équipe Moon.</p>
+      <ol class="steps">
+        <li><div>Choisis ce dont tu as besoin : une information, du soutien, des protections, une orientation médicale ou une question anonyme.</div></li>
+        <li><div>Écris ton message. Coche <span class="ui">Rester anonyme</span> si tu ne veux pas que l'équipe voie ton pseudo, et <span class="ui">C'est urgent</span> si besoin.</div></li>
+        <li><div>Touche <span class="ui">Envoyer</span>. Suis ta demande dans <strong>Mes demandes</strong> : Reçue, En cours, Traitée. Les réponses arrivent dans la conversation, avec une notification discrète.</div></li>
+      </ol>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/50-aide.jpg" alt="Espace Je suis là pour toi" loading="lazy"></div><figcaption>Choisir son besoin</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/51-demande.jpg" alt="Formulaire de demande d'aide" loading="lazy"></div><figcaption>Écrire sa demande</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/52-conversation.jpg" alt="Conversation avec l'équipe Moon" loading="lazy"></div><figcaption>Suivre la réponse</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/53-urgence.jpg" alt="Numéros d'aide urgente" loading="lazy"></div><figcaption>Aide urgente</figcaption></figure>
+      </div>
+      <div class="note danger"><span class="i">🚨</span><p>En danger ou très mal ? Touche <span class="ui">J'ai besoin d'aide urgente</span> pour appeler directement une ligne d'écoute ou les urgences. Ces numéros restent disponibles même sans Internet si tu as téléchargé les centres de ta région.</p></div>
+    </section>
+
+    <section class="chap" id="m-centres">
+      <h3>Trouver un centre</h3>
+      <p class="intro">Depuis l'onglet Aide, touche <span class="ui">Trouver un centre près de moi</span>.</p>
+      <ul>
+        <li><strong>Ta position</strong> sert seulement à trouver les centres proches ; elle n'est jamais enregistrée. Tu peux aussi <span class="ui">Plutôt choisir ma ville ou mon quartier</span>.</li>
+        <li><strong>Liste ou Carte</strong> : chaque centre indique s'il est ouvert, sa distance et le temps à pied. Touche <span class="ui">Appeler</span> ou <span class="ui">Itinéraire</span>.</li>
+        <li><strong>Filtres</strong> : type de centre, distance, ouvert maintenant, services (écoute, consultation, protections…), gratuit, langue, accessible.</li>
+        <li><strong>La fiche d'un centre</strong> détaille ce qu'il propose. Le cœur l'enregistre ; <span class="ui">Signaler une erreur sur cette fiche</span> prévient l'équipe.</li>
+        <li><span class="ui">Télécharger les centres de ma région</span> permet de les consulter sans Internet.</li>
+      </ul>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/54-position.jpg" alt="Autorisation de la position" loading="lazy"></div><figcaption>Autoriser la position</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/55-centres.jpg" alt="Liste des centres" loading="lazy"></div><figcaption>Liste des centres</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/56-filtres.jpg" alt="Filtres des centres" loading="lazy"></div><figcaption>Filtres</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/57-fiche-centre.jpg" alt="Fiche d'un centre" loading="lazy"></div><figcaption>Fiche d'un centre</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="m-profil">
+      <h3>Profil et confidentialité</h3>
+      <p class="intro">Ouvre ton profil en touchant ton avatar, en haut à droite de l'accueil.</p>
+      <ul>
+        <li><strong>Mon avatar, mon pseudo et mon usage</strong> (Suivre mon cycle ou Comprendre).</li>
+        <li><strong>Code secret au démarrage</strong> : choisis un code à 4 chiffres. Moon se verrouille à l'ouverture et après 1 minute en arrière-plan ; l'empreinte ou Face ID fonctionnent aussi si ton téléphone les propose.</li>
+        <li><strong>Notifications discrètes</strong> (activées par défaut) : aucun mot sur les règles ne s'affiche sur ton écran.</li>
+        <li><strong>Rappels</strong> : 2 jours avant les règles, changement de protection, boire de l'eau, journal du soir.</li>
+        <li><strong>Mes données</strong> : changer mon mot de passe, corriger mes dates, exporter mes données, supprimer mon compte (définitif).</li>
+      </ul>
+      <div class="shots">
+        <figure><div class="phone"><img src="img/mobile/60-profil.jpg" alt="Profil : avatar et pseudo" loading="lazy"></div><figcaption>Mon profil</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/61-confidentialite.jpg" alt="Confidentialité et rappels" loading="lazy"></div><figcaption>Confidentialité et rappels</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/62-mes-donnees.jpg" alt="Mes données" loading="lazy"></div><figcaption>Mes données</figcaption></figure>
+        <figure><div class="phone"><img src="img/mobile/63-code-secret.jpg" alt="Écran de verrouillage par code secret" loading="lazy"></div><figcaption>Code secret</figcaption></figure>
+      </div>
+      <div class="note privacy"><span class="i">🛡️</span><p>Quand tu te déconnectes, toutes les données gardées sur le téléphone sont effacées. Elles restent sauvegardées sur ton compte et reviennent à la prochaine connexion.</p></div>
+    </section>
+
+    <section class="chap" id="m-horsligne">
+      <h3>Sans Internet</h3>
+      <p class="intro">Moon fonctionne même avec un réseau faible ou absent. Un bandeau jaune « Mode hors ligne » te le signale.</p>
+      <ul>
+        <li>Le <strong>calendrier et les prévisions</strong> sont calculés sur ton téléphone.</li>
+        <li>Ton <strong>journal</strong> et tes <strong>dates de règles</strong> sont enregistrés tout de suite, puis envoyés automatiquement au retour du réseau.</li>
+        <li>Les <strong>jeux</strong> déjà ouverts restent jouables ; ton score est compté plus tard.</li>
+        <li>Les <strong>centres téléchargés</strong> et les numéros utiles restent consultables. La carte, elle, a besoin d'Internet.</li>
+      </ul>
+    </section>
+
+    <section class="chap" id="m-faq">
+      <h3>Questions fréquentes</h3>
+      <details><summary>Mes prévisions sont fausses, que faire ?</summary><p>Vérifie tes dates dans <span class="ui">Corriger mes dates de règles</span>. Les premières années, les cycles sont souvent irréguliers : Moon s'ajuste à chaque nouveau cycle enregistré.</p></details>
+      <details><summary>Quelqu'un peut-il voir mes données ?</summary><p>Non. L'équipe Moon ne voit ni ton cycle, ni ton journal, ni ton numéro. Active le code secret si d'autres personnes utilisent ton téléphone.</p></details>
+      <details><summary>Je n'ai pas reçu de réponse à ma demande.</summary><p>L'équipe répond dès que possible ; la demande passe de « Reçue » à « En cours ». En cas d'urgence, n'attends pas : utilise <span class="ui">J'ai besoin d'aide urgente</span>.</p></details>
+      <details><summary>Je veux tout supprimer.</summary><p>Profil → <span class="ui">Supprimer mon compte</span>. Toutes tes données (cycles, journal, scores, demandes) sont effacées définitivement.</p></details>
+      <details><summary>Je n'ai pas les moyens d'acheter des protections.</summary><p>Fais une demande « Des protections » dans l'espace d'aide, ou filtre les centres par le service « Protections hygiéniques ».</p></details>
+    </section>
+
+    <!-- ===================================================== PARTIE 2 ===================================================== -->
+    <div class="part-head" id="back-office">
+      <div>
+        <div class="tag">Partie 2 · pour l'équipe Moon</div>
+        <h2>Le back-office web</h2>
+        <p>Le back-office s'utilise dans un navigateur récent (Chrome, Edge, Firefox, Safari), sur ordinateur de préférence. Il sert à publier les contenus, animer les jeux, répondre aux demandes d'aide, tenir à jour les centres et protéger les comptes.</p>
+      </div>
+    </div>
+
+    <section class="chap" id="w-acces">
+      <h3>Accès et rôles</h3>
+      <p class="intro">Connecte-toi avec l'e-mail et le mot de passe que t'a donnés le super administrateur. Le menu n'affiche que les pages de ton rôle.</p>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Connexion</span></div><img src="img/web/01-connexion.jpg" alt="Page de connexion du back-office" loading="lazy"></div><figcaption>Connexion de l'équipe</figcaption></figure>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Page</th><th>Éducatrice</th><th>Modération</th><th>Accompagnement</th><th>Super admin</th></tr></thead>
+          <tbody>
+            <tr><td>Tableau de bord</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+            <tr><td>Modules, Jeux et défis, Conseils et FAQ</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+            <tr><td>Demandes d'aide, Centres et contacts</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+            <tr><td>Signalements, Utilisateurs</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td></tr>
+            <tr><td>Annonces</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+            <tr><td>Administration (équipe, journal d'audit)</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note privacy"><span class="i">🔐</span><p>Toutes les actions de l'équipe sont enregistrées dans le journal d'audit. Ta session se ferme quand tu fermes l'onglet : pense à te déconnecter sur un ordinateur partagé.</p></div>
+    </section>
+
+    <section class="chap" id="w-tableau">
+      <h3>Tableau de bord</h3>
+      <p class="intro">La première page résume l'activité des 30 derniers jours.</p>
+      <ul>
+        <li>Un <strong>bandeau rouge</strong> signale les demandes d'aide urgentes en attente ; clique pour les ouvrir.</li>
+        <li><strong>Compteurs</strong> : utilisatrices actives, modules publiés et complétion, parties jouées et réussite, demandes ouvertes, signalements.</li>
+        <li><strong>Graphiques</strong> : inscriptions par jour, modules les plus consultés, répartition par tranche d'âge, délais de réponse aux demandes.</li>
+      </ul>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Tableau de bord</span></div><img src="img/web/02-tableau-de-bord.jpg" alt="Tableau de bord du back-office" loading="lazy"></div><figcaption>Tableau de bord</figcaption></figure>
+      </div>
+      <div class="note privacy"><span class="i">📊</span><p>Les statistiques sont anonymes et agrégées : un groupe de moins de 5 personnes s'affiche « &lt;5 » pour qu'on ne puisse reconnaître personne.</p></div>
+    </section>
+
+    <section class="chap" id="w-modules">
+      <h3>Modules <small style="font-size:14px;color:var(--muted);font-weight:700">· éducatrices</small></h3>
+      <p class="intro">Un module passe toujours par les mêmes étapes : <strong>Brouillon → En relecture → Publié</strong>, puis éventuellement <strong>Archivé</strong>.</p>
+      <h4>Créer et rédiger un module</h4>
+      <ol class="steps">
+        <li><div>Dans <span class="ui">Modules</span>, clique <span class="ui">+ Nouveau module</span>.</div></li>
+        <li><div>Saisis le titre et le résumé (200 caractères au plus).</div></li>
+        <li><div>Ajoute les étapes avec les boutons <span class="ui">Texte</span>, <span class="ui">⭐ À retenir</span>, <span class="ui">💡 Astuce</span>, <span class="ui">Image</span>, <span class="ui">Vidéo</span> ou <span class="ui">Audio</span>. Les flèches changent l'ordre ; la corbeille supprime une étape.</div></li>
+        <li><div>Complète <strong>Informations</strong> à droite : catégorie, niveau, langue, durée, tags, image de couverture.</div></li>
+        <li><div>Clique <span class="ui">Enregistrer</span>, vérifie le rendu avec <span class="ui">Aperçu</span>, puis <span class="ui">Envoyer en relecture</span>.</div></li>
+      </ol>
+      <h4>Relire et publier</h4>
+      <p>La relectrice ouvre le module (statut « En relecture ») et choisit <span class="ui">Demander des modifications</span> (retour en brouillon) ou <span class="ui">Approuver</span>. Elle choisit alors <em>Publier maintenant</em> ou <em>Programmer</em> une date. Pour retirer un module de l'app : <span class="ui">Retirer de la publication</span>.</p>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Modules</span></div><img src="img/web/10-modules.jpg" alt="Liste des modules avec compteurs par statut" loading="lazy"></div><figcaption>Liste des modules par statut</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Modules › Éditeur</span></div><img src="img/web/11-module-editeur.jpg" alt="Éditeur de module" loading="lazy"></div><figcaption>Éditeur par étapes</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Modules › Publication</span></div><img src="img/web/12-module-publication.jpg" alt="Fenêtre de publication d'un module" loading="lazy"></div><figcaption>Publier ou programmer</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Modules › Statistiques</span></div><img src="img/web/13-module-stats.jpg" alt="Statistiques d'un module" loading="lazy"></div><figcaption>Statistiques d'un module</figcaption></figure>
+      </div>
+      <p>L'onglet <span class="ui">Catégories</span> permet de créer, renommer, ordonner ou supprimer les catégories (les modules restent, sans catégorie).</p>
+      <div class="note warn"><span class="i">🩺</span><p>Tout contenu santé doit être validé par un professionnel de santé avant publication.</p></div>
+    </section>
+
+    <section class="chap" id="w-jeux">
+      <h3>Jeux et défis <small style="font-size:14px;color:var(--muted);font-weight:700">· éducatrices</small></h3>
+      <p class="intro">La vue d'ensemble montre les questions actives, celles en relecture, celles signalées, le taux de réussite moyen et la répartition par thème. Un message prévient quand un thème manque de questions.</p>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Jeux et défis</span></div><img src="img/web/20-jeux.jpg" alt="Vue d'ensemble des jeux et banque de questions" loading="lazy"></div><figcaption>Vue d'ensemble et banque de questions</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Jeux et défis › Nouvelle question</span></div><img src="img/web/21-nouvelle-question.jpg" alt="Menu Nouvelle question" loading="lazy"></div><figcaption>Choisir le type de question</figcaption></figure>
+      </div>
+      <h4>La banque de questions</h4>
+      <ul>
+        <li><strong>Filtres</strong> : type, thème, difficulté, langue, statut, validation médicale. L'interrupteur <span class="ui">Taux de réussite &lt; 30 %</span> isole les questions trop difficiles ou mal formulées.</li>
+        <li><strong>Actions groupées</strong> : coche plusieurs questions puis <span class="ui">Activer</span>, <span class="ui">Envoyer en relecture</span>, <span class="ui">Valider médicalement</span>, <span class="ui">Changer de thème</span> ou <span class="ui">Exporter</span>.</li>
+        <li>Les trois points d'une ligne ouvrent les <strong>statistiques de la question</strong> : la répartition des réponses données et une alerte si plus de la moitié des joueuses se trompent.</li>
+      </ul>
+      <h4>Créer une question</h4>
+      <ol class="steps">
+        <li><div>Clique <span class="ui">+ Nouvelle question</span> et choisis <em>Question de quiz</em>, <em>Mythe ou réalité</em> ou <em>Jeu d'association</em>.</div></li>
+        <li><div>Quiz : 2 à 4 options, coche la bonne réponse. Mythe ou réalité : une affirmation et la réponse. Association : 2 à 8 paires terme → définition (l'app mélange la colonne de droite).</div></li>
+        <li><div>Écris l'<strong>explication</strong> : c'est l'encadré « À retenir » que voit la joueuse. Ajoute un indice si utile.</div></li>
+        <li><div>Vérifie la liste <strong>Qualité de la question</strong> et l'aperçu téléphone, puis <span class="ui">Enregistrer</span>.</div></li>
+        <li><div>Une professionnelle de santé clique <span class="ui">Valider médicalement</span>. Ensuite, <span class="ui">Activer</span> rend la question visible dans l'app.</div></li>
+      </ol>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Éditeur de quiz</span></div><img src="img/web/22-editeur-quiz.jpg" alt="Éditeur de question de quiz" loading="lazy"></div><figcaption>Quiz, qualité et aperçu</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Éditeur Mythe ou réalité</span></div><img src="img/web/23-editeur-mythe.jpg" alt="Éditeur Mythe ou réalité" loading="lazy"></div><figcaption>Mythe ou réalité</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Éditeur d'association</span></div><img src="img/web/24-editeur-association.jpg" alt="Éditeur de jeu d'association" loading="lazy"></div><figcaption>Association</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Statistiques de la question</span></div><img src="img/web/25-stats-question.jpg" alt="Statistiques d'une question" loading="lazy"></div><figcaption>Statistiques d'une question</figcaption></figure>
+      </div>
+      <div class="note warn"><span class="i">ℹ️</span><p>Modifier l'énoncé, les réponses ou l'explication retire automatiquement la validation médicale : il faut la redemander.</p></div>
+      <h4>Importer des questions (CSV)</h4>
+      <p>Clique <span class="ui">Importer</span>, télécharge le modèle, remplis-le puis dépose le fichier. Moon affiche les lignes valides et les erreurs ; seules les lignes valides sont importées, en statut « En relecture ».</p>
+      <pre>type;enonce;theme;options;reponse;explication;difficulte
+quiz;Peut-on faire du sport pendant les règles ?;Corps et cycle;Oui|Non|Seulement le matin;A;Le sport peut soulager les crampes.;facile
+mythe;Le cycle dure toujours 28 jours.;Mythes;;mythe;Il varie de 21 à 35 jours.;facile</pre>
+      <p>Options du quiz séparées par « | » ; la réponse est la lettre (A, B, C, D). Pour un mythe ou une réalité, la réponse est <code>mythe</code> ou <code>réalité</code>.</p>
+      <h4>Défis et badges</h4>
+      <ul>
+        <li><strong>Défis</strong> : titre, description, objectif (bonnes réponses d'affilée, nombre de bonnes réponses ou de parties), jeu concerné, dates et points de récompense. La vue <span class="ui">Calendrier</span> montre les jours couverts.</li>
+        <li><strong>Badges</strong> : nom, icône et critère (parties jouées, bonnes réponses, score parfait, jours de série, modules terminés, points). Ils sont attribués automatiquement.</li>
+      </ul>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Import CSV</span></div><img src="img/web/26-import-csv.jpg" alt="Import CSV" loading="lazy"></div><figcaption>Import CSV</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Défis</span></div><img src="img/web/27-defis.jpg" alt="Liste des défis" loading="lazy"></div><figcaption>Défis</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Éditeur de défi</span></div><img src="img/web/28-editeur-defi.jpg" alt="Éditeur de défi" loading="lazy"></div><figcaption>Éditeur de défi</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Badges</span></div><img src="img/web/29-badges.jpg" alt="Badges" loading="lazy"></div><figcaption>Badges</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="w-conseils">
+      <h3>Conseils et FAQ <small style="font-size:14px;color:var(--muted);font-weight:700">· éducatrices</small></h3>
+      <p class="intro">Trois onglets, une même méthode : clique une ligne pour la modifier, ou <span class="ui">+ Ajouter</span>.</p>
+      <ul>
+        <li><strong>Conseils du jour</strong> : un conseil par phase (règles, folliculaire, ovulation, lutéale ou toutes) et par thème. L'app en montre trois par jour, adaptés à la phase de chacune.</li>
+        <li><strong>Fiches pratiques et alertes</strong> : les fiches (protections, hygiène) et les signaux à surveiller qui invitent à consulter.</li>
+        <li><strong>FAQ</strong> : questions et réponses publiées dans l'app.</li>
+      </ul>
+      <p>Décoche <span class="ui">Publié dans l'app</span> pour masquer un élément sans le supprimer.</p>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Conseils et FAQ</span></div><img src="img/web/30-conseils.jpg" alt="Conseils du jour par phase" loading="lazy"></div><figcaption>Conseils du jour</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="w-demandes">
+      <h3>Demandes d'aide <small style="font-size:14px;color:var(--muted);font-weight:700">· accompagnement</small></h3>
+      <p class="intro">La file affiche d'abord les demandes urgentes, puis les plus anciennes. Le chiffre rose du menu indique les demandes non traitées.</p>
+      <ol class="steps">
+        <li><div>Filtre par statut (<em>À traiter</em>, <em>Reçues</em>, <em>En cours</em>, <em>Traitées</em>), priorité, type ou <em>Assignées à moi</em>. Ouvre une demande.</div></li>
+        <li><div>À droite, assigne-la (à toi ou à une collègue) et ajuste la priorité.</div></li>
+        <li><div>Écris ta réponse et clique <span class="ui">Répondre dans l'app</span> : la personne reçoit une notification discrète et la demande passe « En cours ».</div></li>
+        <li><div>Coche <span class="ui">Note interne</span> pour un mémo réservé à l'équipe (fond jaune, jamais visible dans l'app).</div></li>
+        <li><div>Quand c'est réglé, passe le statut à <em>Traitée</em>.</div></li>
+      </ol>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Demandes d'aide</span></div><img src="img/web/40-demandes.jpg" alt="File des demandes d'aide" loading="lazy"></div><figcaption>File des demandes</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Demande d'aide</span></div><img src="img/web/41-demande.jpg" alt="Conversation, note interne, priorité et assignation" loading="lazy"></div><figcaption>Réponse et note interne</figcaption></figure>
+      </div>
+      <p><strong>Questions anonymes</strong> : l'identité s'affiche « Anonyme ». Si la personne a accepté, le bouton <span class="ui">Publier dans la FAQ</span> transforme la question et la réponse en entrée de FAQ ; reformule pour retirer tout détail personnel.</p>
+      <div class="note danger"><span class="i">🚨</span><p>Une demande « Orientation médicale » ou cochée « C'est urgent » arrive en priorité urgente. Réponds le jour même et oriente vers un centre ou une ligne d'urgence si nécessaire.</p></div>
+    </section>
+
+    <section class="chap" id="w-centres">
+      <h3>Centres et contacts <small style="font-size:14px;color:var(--muted);font-weight:700">· accompagnement</small></h3>
+      <p class="intro">Les compteurs montrent les centres publiés, ceux à vérifier (non vérifiés depuis plus de 6 mois) et ceux dont la position n'est pas confirmée. Clique un compteur pour filtrer.</p>
+      <h4>Ajouter ou modifier un centre, en 4 étapes</h4>
+      <ol class="steps">
+        <li><div><strong>Informations</strong> : nom, type, description courte, téléphone, adresse, quartier, ville, région, public.</div></li>
+        <li><div><strong>Position</strong> : latitude et longitude (dans Google Maps, un clic droit sur le lieu copie ses coordonnées). Vérifie le repère sur la carte et coche la confirmation.</div></li>
+        <li><div><strong>Horaires et services</strong> : horaires jour par jour, services, gratuit, confidentiel, sans rendez-vous, accessible, langues.</div></li>
+        <li><div><strong>Vérification</strong> : la liste de contrôle, <span class="ui">Marquer comme vérifié aujourd'hui</span>, puis <span class="ui">Publier</span>. Pour un centre fermé, préfère <span class="ui">Retirer de l'app</span> à la suppression.</div></li>
+      </ol>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Centres et contacts</span></div><img src="img/web/50-centres.jpg" alt="Liste des centres" loading="lazy"></div><figcaption>Liste des centres</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Centre › Informations</span></div><img src="img/web/51-centre-infos.jpg" alt="Étape Informations" loading="lazy"></div><figcaption>1. Informations</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Centre › Position</span></div><img src="img/web/52-centre-position.jpg" alt="Étape Position" loading="lazy"></div><figcaption>2. Position</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Centre › Horaires et services</span></div><img src="img/web/53-centre-horaires.jpg" alt="Étape Horaires et services" loading="lazy"></div><figcaption>3. Horaires et services</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Centre › Vérification</span></div><img src="img/web/54-centre-verification.jpg" alt="Étape Vérification et publication" loading="lazy"></div><figcaption>4. Vérification et publication</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Contacts d'urgence</span></div><img src="img/web/56-contacts-urgence.jpg" alt="Contacts d'urgence" loading="lazy"></div><figcaption>Contacts d'urgence</figcaption></figure>
+      </div>
+      <ul>
+        <li><strong>Signalements et propositions</strong> : les erreurs signalées et les centres proposés depuis l'app. Marque-les <span class="ui">Traité</span> ou <span class="ui">Refuser</span>.</li>
+        <li><strong>Contacts d'urgence</strong> : les lignes d'écoute et numéros d'urgence affichés derrière le bouton « aide urgente » de l'app. Vérifie chaque numéro auprès de l'organisme avant de le publier.</li>
+        <li><strong>Couverture</strong> : pour chaque région, la part des centres vérifiés et bien positionnés.</li>
+        <li><strong>Actions groupées</strong> : marquer comme vérifié, publier, désactiver, changer de région, exporter.</li>
+      </ul>
+      <h4>Importer des centres (CSV)</h4>
+      <pre>nom;type;adresse;quartier;ville;region;telephone;latitude;longitude;gratuit
+Centre de conseils de Pikine;conseils;Marché de Pikine;Pikine;Dakar;Dakar;77 123 45 67;14.7548;-17.3940;oui</pre>
+      <p>Types acceptés : <code>conseils</code>, <code>sante</code>, <code>ong</code>, <code>protections</code>. Les centres importés ne sont pas publiés : vérifie-les un par un avant publication.</p>
+    </section>
+
+    <section class="chap" id="w-signalements">
+      <h3>Signalements <small style="font-size:14px;color:var(--muted);font-weight:700">· modération</small></h3>
+      <p class="intro">Les utilisatrices peuvent signaler un module, une question, une entrée de FAQ, un message ou un centre.</p>
+      <ol class="steps">
+        <li><div>Ouvre l'onglet <em>À traiter</em> et clique <span class="ui">Traiter</span>.</div></li>
+        <li><div>Choisis l'action sur le contenu : aucune, dépublier ou désactiver, ou supprimer.</div></li>
+        <li><div>Écris la résolution, puis <span class="ui">Marquer comme traité</span> ou <span class="ui">Classer sans suite</span>.</div></li>
+      </ol>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Signalements</span></div><img src="img/web/60-signalement.jpg" alt="Traitement d'un signalement" loading="lazy"></div><figcaption>Traiter un signalement</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="w-utilisateurs">
+      <h3>Utilisateurs <small style="font-size:14px;color:var(--muted);font-weight:700">· modération</small></h3>
+      <p class="intro">Pour protéger la vie privée, la liste n'affiche ni nom, ni e-mail, ni téléphone, ni donnée de santé. Chaque compte est identifié par un pseudo et une référence anonyme (USR-…).</p>
+      <ul>
+        <li><strong>Recherche</strong> par référence ou pseudo ; <strong>filtres</strong> : statut (actif, suspendu, inactif depuis 6 mois), âge, langue, région ; tri par récence, activité ou signalements.</li>
+        <li><strong>Fiche d'un compte</strong> : profil, utilisation (modules terminés, badges, parties) et modération (signalements, dernière action).</li>
+      </ul>
+      <h4>Actions sur un compte</h4>
+      <ul>
+        <li><span class="ui">Suspendre</span> : 7 jours, 30 jours ou jusqu'à nouvel ordre, avec un motif et éventuellement un signalement lié. Coche « Je confirme cette action ». La suspension se lève toute seule à l'échéance.</li>
+        <li><span class="ui">Réactiver</span> : avec un motif (compte conforme, erreur de modération, fin de la sanction).</li>
+        <li><span class="ui">Aider à retrouver l'accès</span> : crée un <strong>mot de passe temporaire</strong> de 8 caractères, affiché une seule fois, et déconnecte tous les appareils. Transmets-le uniquement à la personne, après avoir vérifié son identité.</li>
+        <li><span class="ui">Supprimer le compte</span> : choisis le motif, coche la confirmation et tape <code>SUPPRIMER</code>. Irréversible.</li>
+      </ul>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Utilisateurs</span></div><img src="img/web/70-utilisateurs.jpg" alt="Liste des comptes avec références anonymes" loading="lazy"></div><figcaption>Liste des comptes</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Fiche d'un compte</span></div><img src="img/web/71-fiche-compte.jpg" alt="Fiche d'un compte" loading="lazy"></div><figcaption>Fiche d'un compte</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Suspendre</span></div><img src="img/web/72-suspension.jpg" alt="Suspension d'un compte" loading="lazy"></div><figcaption>Suspendre</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Aider à retrouver l'accès</span></div><img src="img/web/73-acces.jpg" alt="Mot de passe temporaire" loading="lazy"></div><figcaption>Aider à retrouver l'accès</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Supprimer</span></div><img src="img/web/74-suppression.jpg" alt="Suppression définitive d'un compte" loading="lazy"></div><figcaption>Supprimer définitivement</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Statistiques d'inscription</span></div><img src="img/web/75-statistiques.jpg" alt="Statistiques d'inscription" loading="lazy"></div><figcaption>Statistiques d'inscription</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="w-annonces">
+      <h3>Annonces <small style="font-size:14px;color:var(--muted);font-weight:700">· éducatrices et accompagnement</small></h3>
+      <ol class="steps">
+        <li><div>Écris un titre (100 caractères) et un message (300 caractères).</div></li>
+        <li><div>Choisis le public : tranches d'âge (vide = toutes) et langue.</div></li>
+        <li><div><span class="ui">Envoyer maintenant</span>, ou choisis une date puis <span class="ui">Programmer</span>. L'historique montre le nombre de destinataires.</div></li>
+      </ol>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Annonces</span></div><img src="img/web/80-annonces.jpg" alt="Création d'une annonce" loading="lazy"></div><figcaption>Nouvelle annonce</figcaption></figure>
+      </div>
+      <div class="note warn"><span class="i">🔕</span><p>La notification s'affiche sur l'écran verrouillé du téléphone : n'écris jamais de mot sensible dans le titre ou le message.</p></div>
+    </section>
+
+    <section class="chap" id="w-admin">
+      <h3>Administration <small style="font-size:14px;color:var(--muted);font-weight:700">· super administrateur</small></h3>
+      <ul>
+        <li><strong>Équipe</strong> : ajoute un membre (nom, e-mail, rôle). Moon affiche un mot de passe temporaire à transmettre de vive voix. Change un rôle avec la liste déroulante, ou choisis « Retirer l'accès ».</li>
+        <li><strong>Journal d'audit</strong> : qui a fait quoi et quand (publication, suspension, réponse, import…), filtrable par type d'action.</li>
+      </ul>
+      <div class="shots wide">
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Administration › Équipe</span></div><img src="img/web/90-equipe.jpg" alt="Gestion de l'équipe" loading="lazy"></div><figcaption>Équipe</figcaption></figure>
+        <figure><div class="browser"><div class="bar"><i></i><i></i><i></i><span>Administration › Journal d'audit</span></div><img src="img/web/91-audit.jpg" alt="Journal d'audit" loading="lazy"></div><figcaption>Journal d'audit</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="chap" id="w-pratiques">
+      <h3>Bonnes pratiques de l'équipe</h3>
+      <ul>
+        <li><strong>Bienveillance</strong> : des phrases courtes, sans jugement ni jargon médical. Tutoie, comme l'app.</li>
+        <li><strong>Fiabilité</strong> : aucun contenu santé n'est publié sans validation par une professionnelle de santé.</li>
+        <li><strong>Confidentialité</strong> : ne demande jamais de nom, d'adresse ou de numéro dans une réponse. Ne recopie aucune information personnelle dans une note interne ou dans la FAQ.</li>
+        <li><strong>Réactivité</strong> : les demandes urgentes sont traitées le jour même ; les autres, sous 48 heures.</li>
+        <li><strong>Mineures</strong> : en cas de danger, oriente vers les numéros d'urgence et un centre partenaire, et alerte ta responsable.</li>
+        <li><strong>Centres</strong> : revérifie chaque fiche au moins tous les 6 mois (onglet « À vérifier »).</li>
+      </ul>
+    </section>
+
+    <section class="chap" id="w-depannage">
+      <h3>Dépannage</h3>
+      <details><summary>« Ce compte n'a pas accès au back-office. »</summary><p>Ton compte n'a pas de rôle d'équipe. Demande au super administrateur de te l'attribuer dans Administration → Équipe.</p></details>
+      <details><summary>« Tu n'as pas les droits requis pour cette page. »</summary><p>La page appartient à un autre rôle (voir le tableau des rôles). Demande à une collègue de ce rôle, ou au super administrateur.</p></details>
+      <details><summary>Je ne peux pas publier un module.</summary><p>Il doit être « En relecture » et contenir au moins une étape. Seules les éducatrices et le super administrateur peuvent publier.</p></details>
+      <details><summary>Ma question n'apparaît pas dans l'app.</summary><p>Elle doit être <em>Active</em>, et son jeu doit être actif dans la même langue que l'utilisatrice.</p></details>
+      <details><summary>Un centre n'apparaît pas sur la carte de l'app.</summary><p>Vérifie qu'il est publié, que sa latitude et sa longitude sont renseignées et que la position est confirmée.</p></details>
+      <details><summary>J'ai été déconnectée.</summary><p>La session se ferme quand tu fermes l'onglet, ou après une réinitialisation de ton accès. Reconnecte-toi avec ton e-mail et ton mot de passe.</p></details>
+    </section>
+  </main>
+</div>
+
+<footer class="end">
+  Moon informe et sensibilise ; l'application ne remplace pas un avis médical. En cas d'urgence, appelle immédiatement les secours.<br>
+  Guide d'utilisation · version 1.0 · novembre 2026
+</footer>
+
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Capture d'écran agrandie">
+  <button type="button" id="lb-close">Fermer ✕</button>
+  <div><img id="lb-img" alt=""><p id="lb-cap"></p></div>
+</div>
+
+<script>
+  // Agrandir une capture au clic
+  (function () {
+    const box = document.getElementById('lightbox');
+    const img = document.getElementById('lb-img');
+    const cap = document.getElementById('lb-cap');
+    let last = null;
+    document.querySelectorAll('main figure img').forEach(function (el) {
+      el.style.cursor = 'zoom-in';
+      el.tabIndex = 0;
+      el.setAttribute('role', 'button');
+      const open = function () {
+        last = el;
+        img.src = el.src; img.alt = el.alt;
+        const fc = el.closest('figure').querySelector('figcaption');
+        cap.textContent = fc ? fc.textContent : el.alt;
+        box.hidden = false;
+        document.getElementById('lb-close').focus();
+      };
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
+    const close = function () { box.hidden = true; if (last) last.focus(); };
+    document.getElementById('lb-close').addEventListener('click', close);
+    box.addEventListener('click', function (e) { if (e.target === box) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) close(); });
+
+    // Sommaire : surligner la section visible et la partie en cours
+    const links = Array.from(document.querySelectorAll('.toc a'));
+    const parts = document.querySelectorAll('.audience a');
+    const backOffice = document.getElementById('back-office');
+    const update = function () {
+      let current = null;
+      document.querySelectorAll('section.chap').forEach(function (s) { if (s.getBoundingClientRect().top < 140) current = s.id; });
+      links.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + current); });
+      const inWeb = backOffice.getBoundingClientRect().top < 140;
+      parts.forEach(function (a) { a.classList.toggle('active', (a.dataset.part === 'web') === inWeb); });
+    };
+    document.addEventListener('scroll', update, { passive: true });
+    update();
+  })();
+</script>

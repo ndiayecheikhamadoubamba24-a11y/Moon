@@ -198,7 +198,7 @@ export default function HomeScreen() {
                 🏆 Défi du jour
               </T>
               <T weight="extrabold" size={14}>
-                🔥 {data.user.streak_days} jours d'affilée
+                🔥 {data.user.streak_days} jour{data.user.streak_days > 1 ? 's' : ''} d'affilée
               </T>
             </View>
             <T weight="extrabold" size={16} style={{ marginTop: 4 }}>

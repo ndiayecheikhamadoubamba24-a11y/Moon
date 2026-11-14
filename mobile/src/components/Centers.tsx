@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Linking, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import { RESOURCE_TYPES } from '../lib/constants';
 import { colors, space } from '../lib/theme';
 import { Button, Card, T } from './ui';
@@ -44,8 +44,9 @@ export function openingLabel(o: Center['opening']) {
 export function CenterCard({ c, compact }: { c: Center; compact?: boolean }) {
   const type = RESOURCE_TYPES[c.type];
   return (
-    <Card style={{ marginBottom: space.sm }} onPress={() => router.push(`/centers/${c.id}`)}>
-      <View style={{ flexDirection: 'row', gap: space.md }}>
+    // La carte n'est pas un bouton (elle contient des boutons) : seule la partie haute ouvre la fiche.
+    <Card style={{ marginBottom: space.sm }}>
+      <Pressable onPress={() => router.push(`/centers/${c.id}`)} accessibilityRole="link" accessibilityLabel={`Voir la fiche : ${c.name}`} style={{ flexDirection: 'row', gap: space.md }}>
         <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.pinkSoft, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name={(type?.icon ?? 'location') as keyof typeof Ionicons.glyphMap} size={22} color={c.type === 'health_center' ? colors.night : colors.pink} />
         </View>
@@ -78,7 +79,7 @@ export function CenterCard({ c, compact }: { c: Center; compact?: boolean }) {
             </T>
           </View>
         )}
-      </View>
+      </Pressable>
       {!compact && c.phone && (
         <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.md }}>
           <Button title="Appeler" icon="call" small variant="purple" style={{ flex: 1 }} onPress={() => Linking.openURL(`tel:${c.phone}`)} />

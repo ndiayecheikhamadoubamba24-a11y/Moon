@@ -12,9 +12,9 @@ class DemoSeeder extends Seeder
     public function run(): void
     {
         foreach ([
-            'admin@moon.test' => ['Super Admin', 'super_admin'],
+            'admin@moon.test' => ['Fatou Diallo', 'super_admin'],
             'educatrice@moon.test' => ['Awa (éducatrice)', 'educator'],
-            'moderation@moon.test' => ['Fatou (modération)', 'moderator'],
+            'moderation@moon.test' => ['Mariama (modération)', 'moderator'],
             'accompagnement@moon.test' => ['Aminata (accompagnement)', 'support'],
         ] as $email => [$name, $role]) {
             $user = User::firstOrNew(['email' => $email]);
