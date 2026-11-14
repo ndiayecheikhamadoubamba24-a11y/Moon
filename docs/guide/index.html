@@ -165,6 +165,43 @@
   .lightbox p { color: #fff; text-align: center; margin: 10px auto 0; font-weight: 700; }
   .lightbox button { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); background: #fff; color: #2b1858; border: 0; border-radius: 999px; padding: 8px 14px; font: 800 14px var(--font); cursor: pointer; }
 
+  .print-toc { display: none; }
+
+  /* Impression / PDF */
+  @page { size: A4; margin: 16mm 14mm 18mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none !important; }
+    html { scroll-padding-top: 0; }
+    body { font-size: 11.5pt; line-height: 1.5; }
+    body::before, .topbar, nav.toc, .lightbox, .doors { display: none !important; }
+    .cover { break-after: page; border-radius: 18px; }
+    .cover-in { display: block; padding: 40px 32px; }
+    .cover h1 { font-size: 40pt; }
+    .cover-art { display: flex !important; margin-top: 28px; justify-content: center; }
+    .cover-art .phone { width: 34%; }
+    .cover-art .phone:nth-child(2) { transform: none; }
+    .print-toc { display: block; break-after: page; padding: 8px 4px; }
+    .print-toc h2 { font-size: 22pt; font-weight: 900; margin: 0 0 14px; }
+    .print-toc h3 { font-size: 13pt; margin: 18px 0 6px; color: var(--accent); }
+    .print-toc ol { columns: 1; margin: 0; padding-left: 1.4em; }
+    .print-toc a { color: var(--fg); text-decoration: none; }
+    .layout { display: block; padding: 0; max-width: none; }
+    .part-head { break-before: page; margin-top: 0; }
+    section.chap { padding-block: 12px 18px; }
+    h3, h4 { break-after: avoid; }
+    figure, .note, .steps > li, details, .tablewrap, pre, .legend li { break-inside: avoid; }
+    .shots { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .shots.wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .phone { border-radius: 18px; padding: 4px; }
+    .phone img { border-radius: 14px; }
+    p, li { max-width: none; }
+    details { border: 0; padding: 0 0 6px; }
+    details summary { list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    footer.end { padding-block: 12px 0; }
+    a.zoom, main figure img { cursor: default; }
+  }
+
   @media (max-width: 960px) {
     .layout { grid-template-columns: minmax(0, 1fr); }
     nav.toc { display: none; }
@@ -213,6 +250,43 @@
     </div>
   </div>
 </div>
+
+<nav class="print-toc" aria-label="Sommaire du document">
+  <h2>Sommaire</h2>
+  <h3>Partie 1 · L'application mobile</h3>
+  <ol>
+    <li><a href="#m-ouvrir">Ouvrir l'application</a></li>
+    <li><a href="#m-compte">Créer son compte</a></li>
+    <li><a href="#m-connexion">Se connecter</a></li>
+    <li><a href="#m-premier">Premier lancement</a></li>
+    <li><a href="#m-accueil">L'accueil</a></li>
+    <li><a href="#m-calendrier">Le calendrier</a></li>
+    <li><a href="#m-journal">Le journal</a></li>
+    <li><a href="#m-apprendre">Apprendre</a></li>
+    <li><a href="#m-jouer">Jouer</a></li>
+    <li><a href="#m-aide">Je suis là pour toi</a></li>
+    <li><a href="#m-centres">Trouver un centre</a></li>
+    <li><a href="#m-profil">Profil et confidentialité</a></li>
+    <li><a href="#m-horsligne">Sans Internet</a></li>
+    <li><a href="#m-faq">Questions fréquentes</a></li>
+  </ol>
+  <h3>Partie 2 · Le back-office web</h3>
+  <ol>
+    <li><a href="#w-acces">Accès et rôles</a></li>
+    <li><a href="#w-tableau">Tableau de bord</a></li>
+    <li><a href="#w-modules">Modules</a></li>
+    <li><a href="#w-jeux">Jeux et défis</a></li>
+    <li><a href="#w-conseils">Conseils et FAQ</a></li>
+    <li><a href="#w-demandes">Demandes d'aide</a></li>
+    <li><a href="#w-centres">Centres et contacts</a></li>
+    <li><a href="#w-signalements">Signalements</a></li>
+    <li><a href="#w-utilisateurs">Utilisateurs</a></li>
+    <li><a href="#w-annonces">Annonces</a></li>
+    <li><a href="#w-admin">Administration</a></li>
+    <li><a href="#w-pratiques">Bonnes pratiques de l'équipe</a></li>
+    <li><a href="#w-depannage">Dépannage</a></li>
+  </ol>
+</nav>
 
 <div class="layout">
   <nav class="toc" aria-label="Sommaire">
@@ -808,6 +882,10 @@ Centre de conseils de Pikine;conseils;Marché de Pikine;Pikine;Dakar;Dakar;77 12
       parts.forEach(function (a) { a.classList.toggle('active', (a.dataset.part === 'web') === inWeb); });
     };
     document.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('beforeprint', function () {
+      document.querySelectorAll('details').forEach(function (d) { d.open = true; });
+      document.querySelectorAll('img[loading="lazy"]').forEach(function (i) { i.loading = 'eager'; });
+    });
     update();
   })();
 </script>
