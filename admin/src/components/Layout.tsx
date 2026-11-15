@@ -6,11 +6,7 @@ import { useApi } from '../lib/hooks'
 import { cx } from './ui'
 
 export function MoonLogo({ size = 36 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
-      <path d="M40 6a26 26 0 1 0 18 44A22 22 0 0 1 40 6z" fill="#F5B85C" />
-    </svg>
-  )
+  return <img src="/logo.png" alt="Moon" width={size} height={size} className="rounded-xl object-contain bg-white p-0.5" />
 }
 
 type Item = { to: string; label: string; icon: ReactNode; roles?: string[]; badge?: number }

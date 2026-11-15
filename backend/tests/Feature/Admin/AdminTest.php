@@ -159,4 +159,32 @@ class AdminTest extends TestCase
         $this->assertSame(1, $import->json('valid'));
         $this->assertSame(1, $import->json('invalid'));
     }
+
+    public function test_newly_registered_user_appears_as_active_in_admin(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Mariama',
+            'email' => 'mariama@example.com',
+            'password' => 'secret123',
+            'age_range' => '18-21',
+            'consent' => true,
+        ])->assertCreated();
+
+        $moderator = User::factory()->staff('moderator')->create();
+
+        $this->actingAs($moderator)->getJson('/api/v1/admin/users?status[]=active')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Mariama');
+
+        $this->actingAs($moderator)->getJson('/api/v1/admin/users-overview')
+            ->assertOk()
+            ->assertJsonPath('active', 1)
+            ->assertJsonPath('inactive_6_months', 0);
+
+        $this->actingAs($moderator)->getJson('/api/v1/admin/dashboard')
+            ->assertOk()
+            ->assertJsonPath('users.total', 1)
+            ->assertJsonPath('users.active_30d', 1);
+    }
 }

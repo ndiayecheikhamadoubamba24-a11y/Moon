@@ -64,7 +64,7 @@
       [
         "react-native-maps",
         {
-          "androidGoogleMapsApiKey": "REMPLACER_PAR_LA_CLE_GOOGLE_MAPS"
+          "androidGoogleMapsApiKey": "AIzaSyFakeKeyForDevelopmentOnly1234567"
         }
       ]
     ],
@@ -72,7 +72,16 @@
       "typedRoutes": false
     },
     "extra": {
-      "apiUrl": "http://10.0.2.2:8000/api/v1"
-    }
+      "apiUrl": "http://10.0.2.2:8000/api/v1",
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "3bb450dc-34f5-4b75-940d-6ed0caca30e0"
+      }
+    },
+    "owner": "codefire221"
   }
 }

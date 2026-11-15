@@ -40,4 +40,14 @@ return [
         'access_token' => env('EXPO_ACCESS_TOKEN'),
     ],
 
+    'groq' => [
+        'key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'openai/gpt-oss-20b'),
+    ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+    ],
+
 ];

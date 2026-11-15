@@ -7,7 +7,7 @@ import { Float, PopIn, StarField } from './anim';
 import { MOON_MARK, PartnersStrip } from './Brand';
 import { T } from './ui';
 
-const DURATION = 3200;
+const DURATION = 1200;
 const native = Platform.OS !== 'web';
 
 /**

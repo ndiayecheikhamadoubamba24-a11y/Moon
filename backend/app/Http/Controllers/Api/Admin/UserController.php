@@ -43,8 +43,8 @@ class UserController extends Controller
                     foreach ($statuses as $st) {
                         match ($st) {
                             'suspended' => $w->orWhere('status', 'suspended'),
-                            'inactive' => $w->orWhere(fn ($x) => $x->where('status', 'active')->where(fn ($y) => $y->whereNull('last_activity_date')->orWhere('last_activity_date', '<', $inactiveSince))),
-                            default => $w->orWhere(fn ($x) => $x->where('status', 'active')->where('last_activity_date', '>=', $inactiveSince)),
+                            'inactive' => $w->orWhere(fn ($x) => $x->where('status', 'active')->where(fn ($y) => $y->where('last_activity_date', '<', $inactiveSince)->orWhere(fn ($z) => $z->whereNull('last_activity_date')->where('created_at', '<', $inactiveSince)))),
+                            default => $w->orWhere(fn ($x) => $x->where('status', 'active')->where(fn ($y) => $y->where('last_activity_date', '>=', $inactiveSince)->orWhere(fn ($z) => $z->whereNull('last_activity_date')->where('created_at', '>=', $inactiveSince)))),
                         };
                     }
                 });
@@ -81,7 +81,7 @@ class UserController extends Controller
             'active' => (clone $users)->where('status', 'active')->count(),
             'new_this_week' => (clone $users)->where('created_at', '>=', now()->startOfWeek())->count(),
             'suspended' => (clone $users)->where('status', 'suspended')->count(),
-            'inactive_6_months' => (clone $users)->where('status', 'active')->where(fn ($q) => $q->whereNull('last_activity_date')->orWhere('last_activity_date', '<', $inactiveSince))->count(),
+            'inactive_6_months' => (clone $users)->where('status', 'active')->where(fn ($q) => $q->where('last_activity_date', '<', $inactiveSince)->orWhere(fn ($z) => $z->whereNull('last_activity_date')->where('created_at', '<', $inactiveSince)))->count(),
             'regions' => (clone $users)->whereNotNull('region')->distinct()->pluck('region'),
         ]);
     }

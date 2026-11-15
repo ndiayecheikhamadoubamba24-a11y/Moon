@@ -37,6 +37,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('home', Api\HomeController::class);
         Route::post('sync', Api\SyncController::class);
+        Route::post('chat/fatou', [Api\ChatController::class, 'fatou'])->middleware('throttle:help');
 
         // --- Cycle et calendrier ------------------------------------------
         Route::get('cycle/summary', [Api\CycleController::class, 'summary']);

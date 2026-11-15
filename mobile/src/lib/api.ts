@@ -5,8 +5,13 @@ import { secure, store } from './storage';
  * URL de l'API : variable EXPO_PUBLIC_API_URL, sinon `extra.apiUrl` de app.json
  * (10.0.2.2 = machine hôte depuis l'émulateur Android).
  */
+const devHost = Constants.expoConfig?.hostUri?.split(':')[0];
+
 export const API_URL: string =
-  process.env.EXPO_PUBLIC_API_URL ?? (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ?? 'http://localhost:8000/api/v1';
+  process.env.EXPO_PUBLIC_API_URL ??
+  (devHost ? `http://${devHost}:8000/api/v1` : undefined) ??
+  (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ??
+  'http://localhost:8000/api/v1';
 
 export class ApiError extends Error {
   constructor(

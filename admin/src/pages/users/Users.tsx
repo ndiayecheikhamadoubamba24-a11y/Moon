@@ -22,9 +22,10 @@ export type UserRow = {
   suspension_reason: string | null
 }
 
-export function statusOf(u: Pick<UserRow, 'status' | 'last_activity_date'>): { label: string; tone: 'mint' | 'danger' | 'lavender' } {
+export function statusOf(u: Pick<UserRow, 'status' | 'last_activity_date' | 'created_at'>): { label: string; tone: 'mint' | 'danger' | 'lavender' } {
   if (u.status === 'suspended') return { label: 'Suspendu', tone: 'danger' }
-  const inactive = !u.last_activity_date || Date.now() - new Date(u.last_activity_date).getTime() > 182 * 86400000
+  const lastSeen = u.last_activity_date ?? u.created_at
+  const inactive = Date.now() - new Date(lastSeen).getTime() > 182 * 86400000
   return inactive ? { label: 'Inactif', tone: 'lavender' } : { label: 'Actif', tone: 'mint' }
 }
 

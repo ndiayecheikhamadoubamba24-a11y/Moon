@@ -45,6 +45,7 @@ class AuthController extends Controller
             'consented_at' => now(),
             'guardian_consent' => $request->boolean('guardian_consent'),
         ]);
+        $user->forceFill(['last_activity_date' => now()->toDateString()])->save();
 
         return response()->json($this->tokenResponse($user, $data['device_name'] ?? 'mobile'), 201);
     }

@@ -1,11 +1,12 @@
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black, useFonts } from '@expo-google-fonts/nunito';
-import { router, useSegments } from 'expo-router';
+import { router, SplashScreen, useSegments } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CoverScreen } from '../components/CoverScreen';
+import { FatouChatbot } from '../components/FatouChatbot';
 import { LockScreen } from '../components/LockScreen';
 import { Loading } from '../components/ui';
 import { AuthProvider, useAuth } from '../context/AuthContext';
@@ -13,6 +14,8 @@ import { CycleProvider } from '../context/CycleContext';
 import { LockProvider, useLock } from '../context/LockContext';
 import { store } from '../lib/storage';
 import { colors } from '../lib/theme';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function Gate() {
   const { ready, user } = useAuth();
@@ -22,20 +25,21 @@ function Gate() {
   useEffect(() => {
     if (!ready) return;
     const inAuth = segments[0] === '(auth)';
-    if (!user && !inAuth) {
-      router.replace('/welcome');
-    } else if (user && inAuth) {
-      store.get('onboarded', false).then((done) => router.replace(done ? '/' : '/onboarding'));
-    }
+    const timer = setTimeout(() => {
+      try {
+        if (!user && !inAuth) {
+          router.replace('/welcome');
+        } else if (user && inAuth) {
+          store.get('onboarded', false).then((done) => {
+            try {
+              router.replace(done ? '/' : '/onboarding');
+            } catch {}
+          });
+        }
+      } catch {}
+    }, 50);
+    return () => clearTimeout(timer);
   }, [ready, user, segments]);
-
-  if (!ready) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.night }}>
-        <Loading />
-      </View>
-    );
-  }
 
   return (
     <>
@@ -44,6 +48,12 @@ function Gate() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="day/[date]" options={{ presentation: 'transparentModal', animation: 'slide_from_bottom' }} />
       </Stack>
+      {!ready && (
+        <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', backgroundColor: colors.night, zIndex: 100 }]}>
+          <Loading />
+        </View>
+      )}
+      {user && !locked && segments[0] !== '(auth)' && <FatouChatbot />}
       {user && locked && <LockScreen />}
     </>
   );
@@ -68,9 +78,16 @@ function useCover() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black });
+  const [fontsLoaded, fontError] = useFonts({ Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black });
   const cover = useCover();
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: colors.night }} />;
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
@@ -84,5 +101,26 @@ export default function RootLayout() {
         </LockProvider>
       </AuthProvider>
     </SafeAreaProvider>
+  );
+}
+
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.night, justifyContent: 'center', padding: 24 }}>
+      <Text style={{ color: colors.white, fontSize: 20, fontWeight: 'bold', marginBottom: 12 }}>
+        Oups, une erreur est survenue au démarrage
+      </Text>
+      <ScrollView style={{ maxHeight: 260, backgroundColor: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 12 }}>
+        <Text style={{ color: colors.pinkSoft, fontSize: 13, fontFamily: 'monospace' }}>
+          {error?.message ? `${error.message}\n\n${error.stack || ''}` : String(error)}
+        </Text>
+      </ScrollView>
+      <Pressable
+        onPress={retry}
+        style={{ marginTop: 24, backgroundColor: colors.pink, paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+      >
+        <Text style={{ color: colors.white, fontWeight: 'bold', fontSize: 16 }}>Réessayer</Text>
+      </Pressable>
+    </View>
   );
 }
