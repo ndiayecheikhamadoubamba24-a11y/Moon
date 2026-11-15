@@ -1,0 +1,116 @@
+# Moon — hébergement sur un serveur (VPS) avec Docker.
+# Démarrage : cd deploy && cp .env.example .env (puis remplir) && docker compose up -d --build
+name: moon
+
+x-api-env: &api-env
+  APP_NAME: Moon
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_KEY: ${APP_KEY:?APP_KEY manquant dans deploy/.env}
+  APP_URL: https://${SITE_DOMAIN}
+  APP_LOCALE: fr
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: warning
+  DB_CONNECTION: pgsql
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_DATABASE: moon
+  DB_USERNAME: moon
+  DB_PASSWORD: ${DB_PASSWORD}
+  CACHE_STORE: database
+  SESSION_DRIVER: array
+  QUEUE_CONNECTION: sync
+  MAIL_MAILER: ${MAIL_MAILER:-log}
+  MAIL_HOST: ${MAIL_HOST:-}
+  MAIL_PORT: ${MAIL_PORT:-587}
+  MAIL_USERNAME: ${MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@example.org}
+  MAIL_FROM_NAME: Moon
+  EXPO_PUSH_ENABLED: "true"
+  EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: moon
+      POSTGRES_USER: moon
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moon -d moon"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ../backend
+    image: moon-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: *api-env
+    # Au démarrage : migrations, mise en cache de la configuration, puis serveur PHP
+    command:
+      - sh
+      - -c
+      - php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan event:cache && exec frankenphp php-server --listen :8000 --root public/
+
+  # Tâches planifiées : rappels push (toutes les 15 min), annonces programmées
+  scheduler:
+    image: moon-api
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment: *api-env
+    command: ["php", "artisan", "schedule:work"]
+    healthcheck:
+      disable: true
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+      args:
+        VITE_API_URL: /api/v1
+        VITE_PLAY_STORE_URL: ${PLAY_STORE_URL:-}
+        VITE_APP_STORE_URL: ${APP_STORE_URL:-}
+        VITE_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?SITE_DOMAIN manquant dans deploy/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL manquant dans deploy/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # Sauvegarde de la base chaque nuit dans deploy/backups (14 jours conservés)
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./backups:/backups
+      - ./backup.sh:/backup.sh:ro
+    entrypoint: ["/bin/sh", "/backup.sh"]
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

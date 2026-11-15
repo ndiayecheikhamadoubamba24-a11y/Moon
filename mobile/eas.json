@@ -12,11 +12,21 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://moon.sn/api/v1",
+        "EXPO_PUBLIC_SITE_URL": "https://moon.sn"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://moon.sn/api/v1",
+        "EXPO_PUBLIC_SITE_URL": "https://moon.sn"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   }
 }
-

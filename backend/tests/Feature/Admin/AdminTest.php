@@ -187,4 +187,22 @@ class AdminTest extends TestCase
             ->assertJsonPath('users.total', 1)
             ->assertJsonPath('users.active_30d', 1);
     }
+
+    public function test_create_admin_command(): void
+    {
+        $this->artisan('moon:create-admin', ['email' => 'chef@moon.sn', '--name' => 'Cheffe'])
+            ->expectsQuestion('Mot de passe (laisser vide pour en générer un)', 'motdepasse-solide')
+            ->assertSuccessful();
+        $this->assertSame('super_admin', User::where('email', 'chef@moon.sn')->value('role'));
+        $this->postJson('/api/v1/auth/login', ['email' => 'chef@moon.sn', 'password' => 'motdepasse-solide'])->assertOk();
+    }
+
+    public function test_production_seed_has_no_example_centers(): void
+    {
+        $this->app['env'] = 'production';
+        $this->artisan('db:seed', ['--force' => true])->assertSuccessful();
+        $this->assertSame(0, \App\Models\Resource::count());
+        $this->assertSame(0, User::count());
+        $this->assertGreaterThan(0, Module::count());
+    }
 }

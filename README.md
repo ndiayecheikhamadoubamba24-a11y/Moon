@@ -12,7 +12,12 @@ suivi du cycle, conseils personnalisés, modules éducatifs, jeux, espace d'aide
 | `backend/` | API Laravel 13 + Sanctum. PostgreSQL en production, SQLite en local et pour les tests | ✅ V1 |
 | `mobile/` | Application React Native / Expo (voir `mobile/README.md`) | ✅ V1 |
 | `admin/` | Site vitrine public + back-office React sous `/admin` (Vite, Tailwind, Recharts) (voir `admin/README.md`) | ✅ V1 |
+| `deploy/` | Hébergement : Docker Compose (API, PostgreSQL, tâches planifiées, site, sauvegardes) et Caddy (HTTPS) | ✅ |
 | `docs/` | Documentation de l'API (`docs/API.md`) et guide d'utilisation illustré (`docs/guide/index.html`) | ✅ |
+
+## Mettre en ligne
+
+Voir **[docs/HEBERGEMENT.md](docs/HEBERGEMENT.md)** : domaine, serveur, configuration, démarrage en une commande, publication sur Google Play, sauvegardes.
 
 ## Démarrer le backend
 

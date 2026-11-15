@@ -1,0 +1,43 @@
+# Moon — un seul domaine :
+#   https://SITE_DOMAIN/          site vitrine
+#   https://SITE_DOMAIN/admin     back-office
+#   https://SITE_DOMAIN/api/...   API (application mobile et back-office)
+# Le certificat HTTPS (Let's Encrypt) est obtenu et renouvelé automatiquement.
+{
+	email {$ACME_EMAIL}
+}
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# API Laravel
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /up {
+		reverse_proxy api:8000
+	}
+
+	# Site + back-office (application monopage : toutes les adresses renvoient index.html)
+	handle {
+		root * /srv/site
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# www.SITE_DOMAIN → SITE_DOMAIN
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}
