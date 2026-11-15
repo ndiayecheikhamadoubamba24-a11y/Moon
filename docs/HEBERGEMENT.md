@@ -1,6 +1,6 @@
 # Héberger Moon
 
-Ce guide met en ligne **le site vitrine, le back-office et l'API** sur un seul serveur, puis publie **l'application mobile** sur Google Play.
+Ce guide met en ligne **le site vitrine, le back-office et l'API** sur un seul serveur, puis publie **l'application mobile** sur Google Play. Pour l'iPhone, voir `docs/APP-STORE.md`.
 
 ```
                          https://moon.sn
@@ -118,7 +118,7 @@ Ouvre ensuite le fichier (`nano .env`) et remplis au minimum :
 | `DB_PASSWORD` | (commande ci-dessus) | Mot de passe de la base |
 | `CONTACT_EMAIL` | `contact@moon.sn` | Affiché sur le site |
 | `EXPO_ACCESS_TOKEN` | facultatif | Notifications push (expo.dev → Access tokens) |
-| `ANTHROPIC_API_KEY` | facultatif | Chatbot Fatou |
+| `GROQ_API_KEY`, `GEMINI_API_KEY` | facultatif | Chatbot Fatou (Groq en priorité, Gemini en secours) |
 | `MAIL_*` | facultatif | Envoi d'e-mails |
 
 > ⚠️ **Garde une copie de `APP_KEY` et `DB_PASSWORD` en lieu sûr, hors du serveur** (coffre-fort de mots de passe). Sans `APP_KEY`, les notes du journal des utilisatrices deviennent illisibles, même avec une sauvegarde.

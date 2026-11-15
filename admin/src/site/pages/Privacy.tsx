@@ -27,6 +27,14 @@ const SECTIONS: { title: string; body: string[] }[] = [
     ],
   },
   {
+    title: 'Fatou, l’assistante virtuelle',
+    body: [
+      'Fatou est une assistante virtuelle dont les réponses sont écrites par une intelligence artificielle. Son utilisation est facultative et demande ton accord à la première ouverture.',
+      'Pour te répondre, tes messages à Fatou, ton pseudo et ta tranche d’âge sont envoyés à un service d’IA externe (Groq, ou Google Gemini en secours). Moon n’enregistre pas ces conversations. Ces services les traitent selon leurs propres conditions.',
+      'N’écris pas d’informations qui permettent de t’identifier (nom complet, adresse, numéro). Fatou ne remplace pas un professionnel de santé.',
+    ],
+  },
+  {
     title: 'Consentement et mineures',
     body: [
       'Le consentement est demandé à l’inscription. Pour les moins de 18 ans, l’accord d’un parent ou d’un tuteur est requis.',

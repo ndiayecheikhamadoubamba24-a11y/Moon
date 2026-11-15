@@ -18,6 +18,9 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Moon utilise ta position uniquement pour trouver les centres proches de toi. Elle n'est jamais enregistrée.",
         "NSFaceIDUsageDescription": "Moon utilise Face ID pour protéger l'accès à tes données."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {

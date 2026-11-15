@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MOODS } from '../../components/MoodPicker';
 import { tipEmoji } from '../../components/Tips';
 import { Button, Card, T } from '../../components/ui';
 import { useCycle } from '../../context/CycleContext';
-import { cachedGet } from '../../lib/api';
+import { useApi } from '../../lib/hooks';
 import { formatLong, today } from '../../lib/dates';
 import { colors, phaseLabels, space } from '../../lib/theme';
 
@@ -20,14 +19,8 @@ export default function DaySheet() {
   const insets = useSafeAreaInsets();
   const info = model.dayInfo(date);
   const log = logs[date];
-  const [tip, setTip] = useState<Tip | null>(null);
+  const tip = useApi<{ tip: Tip | null }>(`/cycle/day/${date}`).data?.tip ?? null;
   const future = date > today();
-
-  useEffect(() => {
-    cachedGet<{ tip: Tip | null }>(`/cycle/day/${date}`)
-      .then((r) => setTip(r.data.tip))
-      .catch(() => {});
-  }, [date]);
 
   const mood = MOODS.find((m) => m.value === log?.mood);
 

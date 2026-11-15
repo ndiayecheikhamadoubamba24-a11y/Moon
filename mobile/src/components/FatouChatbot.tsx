@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api, errorMessage } from '../lib/api';
+import { store } from '../lib/storage';
 import { colors, fonts, radius, shadow, space } from '../lib/theme';
 
 type Message = {
@@ -43,11 +44,22 @@ export function FatouChatbot() {
   const [messages, setMessages] = useState<Message[]>(() => [WELCOME(user?.name)]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  // Accord explicite avant tout envoi à un service d'IA externe (exigé par Apple, règle 5.1.2, et par la loi).
+  const [consent, setConsent] = useState<boolean | null>(null);
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
   useEffect(() => {
     setMessages((prev) => (prev.length === 1 && prev[0].id === 'welcome' ? [WELCOME(user?.name)] : prev));
   }, [user?.name]);
+
+  useEffect(() => {
+    store.get<boolean>('fatou:consent', false).then(setConsent);
+  }, []);
+
+  const acceptConsent = () => {
+    setConsent(true);
+    store.set('fatou:consent', true);
+  };
 
   useEffect(() => {
     if (open) {
@@ -57,7 +69,7 @@ export function FatouChatbot() {
 
   const send = async (textOverride?: string) => {
     const text = (textOverride ?? input).trim();
-    if (!text || loading) return;
+    if (!text || loading || !consent) return;
 
     const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', content: text };
     const nextMessages = [...messages, userMsg];
@@ -145,6 +157,28 @@ export function FatouChatbot() {
               </View>
             </View>
 
+            {!consent ? (
+              <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+                <View style={styles.consentCard}>
+                  <Text style={styles.consentTitle}>Avant de discuter avec Fatou</Text>
+                  <Text style={styles.consentText}>
+                    Fatou est une assistante virtuelle : ses réponses sont écrites par une intelligence artificielle, pas par une personne de l’équipe.
+                  </Text>
+                  <Text style={styles.consentText}>
+                    Pour te répondre, tes messages, ton pseudo et ta tranche d’âge sont envoyés à un service d’IA externe (Groq, ou Google Gemini en secours). Ils ne sont pas enregistrés par Moon et ne servent pas à la publicité.
+                  </Text>
+                  <Text style={styles.consentText}>
+                    N’écris pas ton nom complet, ton adresse ou ton numéro. Fatou ne remplace pas un professionnel de santé : en cas de danger ou de douleur forte, utilise l’onglet Aide.
+                  </Text>
+                  <Pressable onPress={acceptConsent} style={styles.consentBtn} accessibilityRole="button">
+                    <Text style={styles.consentBtnText}>J’ai compris, je veux discuter</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setOpen(false)} style={styles.consentLater} accessibilityRole="button">
+                    <Text style={styles.consentLaterText}>Pas maintenant</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
+            ) : (
             <ScrollView
               ref={scrollRef}
               style={styles.body}
@@ -183,7 +217,9 @@ export function FatouChatbot() {
                 </View>
               )}
             </ScrollView>
+            )}
 
+            {consent && (
             <View style={styles.inputBar}>
               <TextInput
                 value={input}
@@ -204,6 +240,7 @@ export function FatouChatbot() {
                 <Ionicons name="send" size={18} color={colors.white} />
               </Pressable>
             </View>
+            )}
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -212,6 +249,13 @@ export function FatouChatbot() {
 }
 
 const styles = StyleSheet.create({
+  consentCard: { backgroundColor: colors.white, borderRadius: radius.lg, padding: space.lg, gap: space.md, borderWidth: 1, borderColor: colors.border },
+  consentTitle: { fontFamily: fonts.black, fontSize: 18, color: colors.text },
+  consentText: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 21, color: colors.text },
+  consentBtn: { backgroundColor: colors.purple, borderRadius: radius.pill, paddingVertical: 13, alignItems: 'center', marginTop: space.sm },
+  consentBtnText: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.white },
+  consentLater: { alignItems: 'center', paddingVertical: 6 },
+  consentLaterText: { fontFamily: fonts.bold, fontSize: 14, color: colors.purple },
   fab: {
     position: 'absolute',
     right: 16,

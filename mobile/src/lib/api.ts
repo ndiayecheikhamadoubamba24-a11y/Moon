@@ -61,6 +61,7 @@ export async function api<T = any>(path: string, options: { method?: Method; bod
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeout ?? 15000);
 
+  const sentToken = token;
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -68,7 +69,7 @@ export async function api<T = any>(path: string, options: { method?: Method; bod
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(sentToken ? { Authorization: `Bearer ${sentToken}` } : {}),
       },
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
       signal: controller.signal,
@@ -80,7 +81,9 @@ export async function api<T = any>(path: string, options: { method?: Method; bod
   }
 
   const data = await res.json().catch(() => null);
-  if (res.status === 401) onUnauthorized?.();
+  // Déconnexion seulement si le jeton envoyé est refusé : un appel parti avant le chargement
+  // de la session (ou après un changement de compte) ne doit pas effacer la session en cours.
+  if (res.status === 401 && sentToken && sentToken === token) onUnauthorized?.();
   if (!res.ok) {
     throw new ApiError(data?.message ?? 'Une erreur est survenue.', res.status, data?.errors ?? {});
   }
