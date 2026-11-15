@@ -52,6 +52,7 @@ class User extends Authenticatable
             'notification_settings' => 'array',
             'suspended_until' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
         ];
     }
 

@@ -119,6 +119,48 @@ class AdminTest extends TestCase
         $this->assertSame('educator', User::where('email', 'edu@moon.test')->value('role'));
     }
 
+    public function test_staff_created_with_password_must_choose_a_personal_one(): void
+    {
+        $admin = User::factory()->staff('super_admin')->create();
+        $this->actingAs($admin)->postJson('/api/v1/admin/staff', [
+            'name' => 'Awa Ndiaye', 'email' => 'Awa@Moon.test', 'role' => 'moderator', 'password' => 'Provisoire2026',
+        ])->assertCreated()->assertJsonPath('temporary_password', null)->assertJsonPath('user.must_change_password', true);
+        $this->actingAs($admin)->getJson('/api/v1/admin/staff')->assertOk()->assertJsonFragment(['email' => 'awa@moon.test', 'role' => 'moderator']);
+
+        // Connexion avec l'e-mail et le mot de passe donnés par l'administrateur
+        $token = $this->postJson('/api/v1/auth/login', ['email' => 'awa@moon.test', 'password' => 'Provisoire2026'])
+            ->assertOk()->assertJsonPath('user.must_change_password', true)->json('token');
+        $this->app['auth']->forgetGuards();
+        $auth = ['Authorization' => "Bearer {$token}"];
+
+        // Tant que le mot de passe personnel n'est pas choisi : seul le changement est permis
+        $this->getJson('/api/v1/admin/me', $auth)->assertOk()->assertJsonPath('must_change_password', true);
+        $this->getJson('/api/v1/admin/reports', $auth)->assertForbidden();
+        $this->postJson('/api/v1/admin/password', ['current_password' => 'mauvais', 'password' => 'MonSecret2026!', 'password_confirmation' => 'MonSecret2026!'], $auth)
+            ->assertUnprocessable()->assertJsonValidationErrors('current_password');
+        $this->postJson('/api/v1/admin/password', ['current_password' => 'Provisoire2026', 'password' => 'Provisoire2026', 'password_confirmation' => 'Provisoire2026'], $auth)
+            ->assertUnprocessable()->assertJsonValidationErrors('password');
+
+        $this->postJson('/api/v1/admin/password', ['current_password' => 'Provisoire2026', 'password' => 'MonSecret2026!', 'password_confirmation' => 'MonSecret2026!'], $auth)
+            ->assertOk()->assertJsonPath('must_change_password', false);
+        $this->app['auth']->forgetGuards();
+        $this->getJson('/api/v1/admin/reports', $auth)->assertOk();
+
+        $this->postJson('/api/v1/auth/login', ['email' => 'awa@moon.test', 'password' => 'Provisoire2026'])->assertUnprocessable();
+        $this->postJson('/api/v1/auth/login', ['email' => 'awa@moon.test', 'password' => 'MonSecret2026!'])->assertOk();
+    }
+
+    public function test_super_admin_resets_a_staff_password(): void
+    {
+        $admin = User::factory()->staff('super_admin')->create();
+        $educator = User::factory()->staff('educator')->create();
+        $res = $this->actingAs($admin)->postJson("/api/v1/admin/staff/{$educator->id}/password")->assertOk();
+        $this->assertNotEmpty($res->json('temporary_password'));
+        $this->assertTrue($educator->fresh()->must_change_password);
+
+        $this->actingAs($educator->fresh())->postJson("/api/v1/admin/staff/{$admin->id}/password")->assertForbidden();
+    }
+
     public function test_report_moderation_unpublishes_content(): void
     {
         $this->seed(ContentSeeder::class);

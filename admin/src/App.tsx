@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import SiteApp from './site/SiteApp'
@@ -14,6 +15,7 @@ import QuestionEditor from './pages/games/QuestionEditor'
 import QuestionStats from './pages/games/QuestionStats'
 import HelpQueue from './pages/help/HelpQueue'
 import HelpThread from './pages/help/HelpThread'
+import FirstPassword from './pages/ChangePassword'
 import Login from './pages/Login'
 import ModuleEditor from './pages/modules/ModuleEditor'
 import Modules from './pages/modules/Modules'
@@ -24,32 +26,39 @@ import TipsFaq from './pages/TipsFaq'
 import UserDetail from './pages/users/UserDetail'
 import Users from './pages/users/Users'
 
+/** Page réservée à certains postes : sinon retour au tableau de bord (l'API refuse aussi l'accès). */
+function Allow({ roles, children }: { roles: string[]; children: ReactNode }) {
+  const { can } = useAuth()
+  return can(...roles) ? children : <Navigate to="/" replace />
+}
+
 function Routed() {
   const { staff, ready } = useAuth()
   if (!ready) return <Loading />
   if (!staff) return <Login />
+  if (staff.must_change_password) return <FirstPassword />
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
-        <Route path="modules" element={<Modules />} />
-        <Route path="modules/:id" element={<ModuleEditor />} />
-        <Route path="jeux" element={<Games />} />
-        <Route path="jeux/questions/:id" element={<QuestionEditor />} />
-        <Route path="jeux/questions/:id/stats" element={<QuestionStats />} />
-        <Route path="jeux/defis/:id" element={<ChallengeEditor />} />
-        <Route path="conseils" element={<TipsFaq />} />
-        <Route path="demandes" element={<HelpQueue />} />
-        <Route path="demandes/:id" element={<HelpThread />} />
-        <Route path="centres" element={<Centers />} />
-        <Route path="centres/:id" element={<CenterEditor />} />
-        <Route path="signalements" element={<Reports />} />
-        <Route path="utilisateurs" element={<Users />} />
-        <Route path="utilisateurs/:id" element={<UserDetail />} />
-        <Route path="annonces" element={<Announcements />} />
-        <Route path="publications" element={<Publications />} />
-        <Route path="publications/:id" element={<PublicationEditor />} />
-        <Route path="administration" element={<Administration />} />
+        <Route path="modules" element={<Allow roles={['educator']}><Modules /></Allow>} />
+        <Route path="modules/:id" element={<Allow roles={['educator']}><ModuleEditor /></Allow>} />
+        <Route path="jeux" element={<Allow roles={['educator']}><Games /></Allow>} />
+        <Route path="jeux/questions/:id" element={<Allow roles={['educator']}><QuestionEditor /></Allow>} />
+        <Route path="jeux/questions/:id/stats" element={<Allow roles={['educator']}><QuestionStats /></Allow>} />
+        <Route path="jeux/defis/:id" element={<Allow roles={['educator']}><ChallengeEditor /></Allow>} />
+        <Route path="conseils" element={<Allow roles={['educator']}><TipsFaq /></Allow>} />
+        <Route path="demandes" element={<Allow roles={['support']}><HelpQueue /></Allow>} />
+        <Route path="demandes/:id" element={<Allow roles={['support']}><HelpThread /></Allow>} />
+        <Route path="centres" element={<Allow roles={['support']}><Centers /></Allow>} />
+        <Route path="centres/:id" element={<Allow roles={['support']}><CenterEditor /></Allow>} />
+        <Route path="signalements" element={<Allow roles={['moderator']}><Reports /></Allow>} />
+        <Route path="utilisateurs" element={<Allow roles={['moderator']}><Users /></Allow>} />
+        <Route path="utilisateurs/:id" element={<Allow roles={['moderator']}><UserDetail /></Allow>} />
+        <Route path="annonces" element={<Allow roles={['educator', 'support']}><Announcements /></Allow>} />
+        <Route path="publications" element={<Allow roles={['educator', 'support']}><Publications /></Allow>} />
+        <Route path="publications/:id" element={<Allow roles={['educator', 'support']}><PublicationEditor /></Allow>} />
+        <Route path="administration" element={<Allow roles={['super_admin']}><Administration /></Allow>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Route>
     </Routes>

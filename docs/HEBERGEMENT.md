@@ -157,7 +157,7 @@ docker compose exec api php artisan moon:create-admin admin@moon.sn --name="Fato
 
 Ensuite, dans le back-office :
 
-1. Ajoute l'équipe (Administration → Équipe).
+1. Ajoute l'équipe (Administration → Équipe) : nom, e-mail, poste et mot de passe provisoire. À sa première connexion sur `https://moon.sn/admin`, chaque personne choisit son mot de passe personnel.
 2. Ajoute les vrais centres et les numéros d'urgence (Centres et contacts).
 3. Écris une première publication (Publications du site).
 

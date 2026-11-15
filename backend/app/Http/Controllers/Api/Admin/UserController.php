@@ -8,8 +8,9 @@ use App\Models\Report;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Gestion des comptes. Aucune donnée de santé (cycles, journal) n'est exposée ici.
@@ -169,7 +170,7 @@ class UserController extends Controller
             // Lisible à l'oral : pas de caractères ambigus (0/O, 1/l)
             $alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
             $temporary = collect(range(1, 8))->map(fn () => $alphabet[random_int(0, strlen($alphabet) - 1)])->implode('');
-            $user->forceFill(['password' => $temporary])->save();
+            $user->forceFill(['password' => $temporary, 'must_change_password' => $user->isStaff()])->save();
         }
         $user->tokens()->delete();
         AuditLog::record('user.access_reset', $user, ['temporary_password' => $temporary !== null]);
@@ -194,24 +195,100 @@ class UserController extends Controller
     }
 
     /** Création d'un membre de l'équipe (super administrateur uniquement). */
+    /**
+     * Crée un compte de l'équipe avec un mot de passe provisoire fixé (ou généré) par l'administrateur.
+     * À sa première connexion, la personne doit choisir son mot de passe personnel.
+     */
     public function storeStaff(Request $request): JsonResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:191', 'unique:users,email'],
             'role' => ['required', Rule::in(User::STAFF_ROLES)],
-            'password' => ['nullable', 'string', 'min:10'],
+            'password' => ['nullable', 'string', 'min:8', 'max:100'],
+        ], [
+            'email.unique' => 'Un compte existe déjà avec cet e-mail.',
+            'password.min' => 'Le mot de passe provisoire doit contenir au moins 8 caractères.',
         ]);
-        $password = $data['password'] ?? Str::password(14);
+        $password = $data['password'] ?? self::readablePassword(10);
 
-        $user = new User(['name' => $data['name'], 'email' => $data['email'], 'password' => $password]);
-        $user->forceFill(['role' => $data['role'], 'consented_at' => now(), 'email_verified_at' => now()])->save();
+        $user = new User(['name' => $data['name'], 'email' => strtolower($data['email']), 'password' => $password]);
+        $user->forceFill([
+            'role' => $data['role'],
+            'must_change_password' => true,
+            'consented_at' => now(),
+            'email_verified_at' => now(),
+        ])->save();
         AuditLog::record('staff.created', $user, ['role' => $data['role']]);
 
         return response()->json([
-            'user' => [...$this->present($user), 'email' => $user->email],
+            'user' => $this->presentStaff($user),
             'temporary_password' => isset($data['password']) ? null : $password,
         ], 201);
+    }
+
+    /** Liste de l'équipe (avec e-mail : nécessaire pour gérer les accès). */
+    public function staff(): JsonResponse
+    {
+        $staff = User::whereIn('role', User::STAFF_ROLES)->orderBy('name')->get();
+
+        return response()->json($staff->map(fn (User $u) => $this->presentStaff($u)));
+    }
+
+    /** Nouveau mot de passe provisoire pour un membre de l'équipe (oubli, départ…). */
+    public function resetStaffPassword(Request $request, User $user): JsonResponse
+    {
+        abort_unless($user->isStaff(), 404);
+        abort_if($user->is($request->user()), 422, 'Pour ton propre compte, utilise « Changer mon mot de passe ».');
+        $data = $request->validate(['password' => ['nullable', 'string', 'min:8', 'max:100']]);
+        $password = $data['password'] ?? self::readablePassword(10);
+        $user->forceFill(['password' => $password, 'must_change_password' => true])->save();
+        $user->tokens()->delete();
+        AuditLog::record('staff.password_reset', $user);
+
+        return response()->json([
+            'user' => $this->presentStaff($user),
+            'temporary_password' => isset($data['password']) ? null : $password,
+        ]);
+    }
+
+    /** La personne connectée choisit son mot de passe personnel (obligatoire au premier accès). */
+    public function changeOwnPassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:10', 'max:100', 'confirmed', 'different:current_password'],
+        ], [
+            'password.min' => 'Le nouveau mot de passe doit contenir au moins 10 caractères.',
+            'password.confirmed' => 'Les deux mots de passe ne sont pas identiques.',
+            'password.different' => 'Choisis un mot de passe différent de celui donné par l\'administrateur.',
+        ]);
+        if (! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages(['current_password' => 'Mot de passe actuel incorrect.']);
+        }
+        $user->forceFill(['password' => $data['password'], 'must_change_password' => false])->save();
+        // Les autres appareils connectés avec l'ancien mot de passe sont déconnectés
+        $user->tokens()->where('id', '!=', $user->currentAccessToken()?->getKey())->delete();
+        AuditLog::record('staff.password_changed', $user);
+
+        return response()->json($user->only(['id', 'name', 'email', 'role', 'must_change_password']));
+    }
+
+    private function presentStaff(User $u): array
+    {
+        return [
+            ...$u->only(['id', 'name', 'email', 'role', 'status', 'last_activity_date', 'created_at']),
+            'must_change_password' => (bool) $u->must_change_password,
+        ];
+    }
+
+    /** Lisible à l'oral : pas de caractères ambigus (0/O, 1/l). */
+    private static function readablePassword(int $length): string
+    {
+        $alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+        return collect(range(1, $length))->map(fn () => $alphabet[random_int(0, strlen($alphabet) - 1)])->implode('');
     }
 
     public function updateRole(Request $request, User $user): JsonResponse

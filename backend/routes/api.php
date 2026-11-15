@@ -111,7 +111,8 @@ Route::prefix('v1')->group(function () {
             Route::get('dashboard', Admin\DashboardController::class);
 
             // Contenus : éducateurs
-            Route::get('me', fn (Request $r) => $r->user()->only(['id', 'name', 'email', 'role']));
+            Route::get('me', fn (Request $r) => $r->user()->only(['id', 'name', 'email', 'role', 'must_change_password']));
+            Route::post('password', [Admin\UserController::class, 'changeOwnPassword']);
 
             Route::middleware('role:educator')->group(function () {
                 Route::get('modules/{module}/stats', [Admin\ModuleController::class, 'stats']);
@@ -175,7 +176,9 @@ Route::prefix('v1')->group(function () {
 
             // Super administrateur
             Route::middleware('role:super_admin')->group(function () {
+                Route::get('staff', [Admin\UserController::class, 'staff']);
                 Route::post('staff', [Admin\UserController::class, 'storeStaff']);
+                Route::post('staff/{user}/password', [Admin\UserController::class, 'resetStaffPassword']);
                 Route::patch('users/{user}/role', [Admin\UserController::class, 'updateRole']);
                 Route::get('audit-logs', [Admin\AuditLogController::class, 'index']);
             });

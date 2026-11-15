@@ -1,7 +1,8 @@
-import { BookOpen, ExternalLink, Flag, Gamepad2, HeartHandshake, LayoutDashboard, LogOut, MapPin, Megaphone, Menu, MessageCircleQuestion, Newspaper, Settings, Users, X } from 'lucide-react'
+import { BookOpen, ExternalLink, Flag, Gamepad2, HeartHandshake, KeyRound, LayoutDashboard, LogOut, MapPin, Megaphone, Menu, MessageCircleQuestion, Newspaper, Settings, Users, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { ROLE_LABELS, useAuth } from '../lib/auth'
+import { ChangePasswordModal } from '../pages/ChangePassword'
 import { useApi } from '../lib/hooks'
 import { cx } from './ui'
 
@@ -13,6 +14,7 @@ type Item = { to: string; label: string; icon: ReactNode; roles?: string[]; badg
 
 export function Layout() {
   const { staff, logout, can } = useAuth()
+  const [pwOpen, setPwOpen] = useState(false)
   const [open, setOpen] = useState(false)
   const { data: dash } = useApi<{ help_requests: { open: number }; reports_open: number }>('/admin/dashboard')
 
@@ -67,11 +69,15 @@ export function Layout() {
         <div className="rounded-2xl bg-white/10 p-3 text-white">
           <div className="font-extrabold">{staff?.name}</div>
           <div className="text-xs text-white/70">{staff && ROLE_LABELS[staff.role]}</div>
-          <button onClick={logout} className="mt-3 flex items-center gap-2 text-sm font-bold text-white/85 hover:text-white">
+          <button onClick={() => setPwOpen(true)} className="mt-3 flex items-center gap-2 text-left text-sm font-bold text-white/85 hover:text-white">
+            <KeyRound className="size-4 shrink-0" /> Mon mot de passe
+          </button>
+          <button onClick={logout} className="mt-2 flex items-center gap-2 text-sm font-bold text-white/85 hover:text-white">
             <LogOut className="size-4" /> Se déconnecter
           </button>
         </div>
       </aside>
+      <ChangePasswordModal open={pwOpen} onClose={() => setPwOpen(false)} />
       {open && <div className="fixed inset-0 z-30 bg-night/40 lg:hidden" onClick={() => setOpen(false)} />}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-line bg-white px-4 py-3 lg:hidden">
