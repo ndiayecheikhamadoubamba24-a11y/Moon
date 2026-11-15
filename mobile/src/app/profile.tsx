@@ -9,6 +9,10 @@ import { useAuth } from '../context/AuthContext';
 import { useLock } from '../context/LockContext';
 import { api, errorMessage } from '../lib/api';
 import { AVATARS } from '../lib/constants';
+import Constants from 'expo-constants';
+
+/** Site vitrine Moon (variable EXPO_PUBLIC_SITE_URL, sinon `extra.siteUrl` de app.json). */
+const SITE_URL: string = process.env.EXPO_PUBLIC_SITE_URL ?? (Constants.expoConfig?.extra as { siteUrl?: string } | undefined)?.siteUrl ?? 'https://moon.example.org';
 import { useApi } from '../lib/hooks';
 import { registerForPush } from '../lib/notifications';
 import { colors, space } from '../lib/theme';
@@ -162,7 +166,7 @@ export default function Profile() {
         <Card style={{ gap: 4 }}>
           <Link icon="help-circle-outline" label="Questions fréquentes" onPress={() => router.push('/faq')} />
           <Link icon="mail-outline" label="Contacter l'équipe Moon" onPress={() => router.push({ pathname: '/help/new', params: { type: 'information' } })} />
-          <Link icon="globe-outline" label="Politique de confidentialité" onPress={() => Linking.openURL('https://moon.example.org/confidentialite')} />
+          <Link icon="globe-outline" label="Politique de confidentialité" onPress={() => Linking.openURL(`${SITE_URL}/confidentialite`)} />
         </Card>
 
         <View style={{ marginTop: space.xl }}>

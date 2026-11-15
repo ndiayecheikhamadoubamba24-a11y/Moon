@@ -20,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(5)->by('otp:'.strtolower((string) $r->input('identifier'))),
             Limit::perHour(20)->by('otp-ip:'.$r->ip()),
         ]);
+        RateLimiter::for('public', fn (Request $r) => Limit::perMinute(60)->by($r->ip()));
         RateLimiter::for('help', fn (Request $r) => Limit::perHour(20)->by($r->user()?->id ?: $r->ip()));
     }
 }

@@ -25,6 +25,13 @@ Route::prefix('v1')->group(function () {
         Route::post('password/reset', [Api\AuthController::class, 'resetPassword']);
     });
 
+    // --- Site vitrine (public) ---------------------------------------------
+    Route::prefix('public')->middleware('throttle:public')->group(function () {
+        Route::get('publications', [Api\PublicController::class, 'publications']);
+        Route::get('publications/{slug}', [Api\PublicController::class, 'publication']);
+        Route::get('summary', [Api\PublicController::class, 'summary']);
+    });
+
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('auth/logout', [Api\AuthController::class, 'logout']);
 
@@ -158,8 +165,9 @@ Route::prefix('v1')->group(function () {
                 Route::patch('resource-suggestions/{suggestion}', [Admin\AuditLogController::class, 'updateSuggestion']);
             });
 
-            // Annonces : éducateurs et responsables
+            // Annonces et publications du site : éducateurs et responsables
             Route::middleware('role:educator,support')->group(function () {
+                Route::apiResource('publications', Admin\PublicationController::class);
                 Route::get('announcements', [Admin\AnnouncementController::class, 'index']);
                 Route::post('announcements', [Admin\AnnouncementController::class, 'store']);
                 Route::post('announcements/{announcement}/send', [Admin\AnnouncementController::class, 'send']);

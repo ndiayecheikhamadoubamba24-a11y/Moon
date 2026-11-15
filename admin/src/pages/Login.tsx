@@ -31,7 +31,7 @@ export default function Login() {
           <MoonLogo size={40} />
           <div>
             <div className="text-2xl font-black">Moon</div>
-            <div className="text-sm font-bold text-muted">Back-office de l'équipe</div>
+            <div className="text-sm font-bold text-muted">Connexion de l'équipe</div>
           </div>
         </div>
         <Field label="E-mail">
@@ -45,6 +45,9 @@ export default function Login() {
           Me connecter
         </Button>
         <p className="text-center text-xs text-muted">Accès réservé à l'équipe Moon. Toutes les actions sont journalisées.</p>
+        <a href="/" className="block text-center text-sm font-bold text-purple hover:underline">
+          ← Retour au site Moon
+        </a>
       </form>
     </div>
   )

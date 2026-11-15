@@ -73,6 +73,7 @@
     },
     "extra": {
       "apiUrl": "http://10.0.2.2:8000/api/v1",
+      "siteUrl": "https://moon.example.org",
       "router": {
         "asyncRoutes": {
           "web": true

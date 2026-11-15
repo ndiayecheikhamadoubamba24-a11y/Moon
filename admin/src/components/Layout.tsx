@@ -1,4 +1,4 @@
-import { BookOpen, Flag, Gamepad2, HeartHandshake, LayoutDashboard, LogOut, MapPin, Megaphone, Menu, MessageCircleQuestion, Settings, Users, X } from 'lucide-react'
+import { BookOpen, ExternalLink, Flag, Gamepad2, HeartHandshake, LayoutDashboard, LogOut, MapPin, Megaphone, Menu, MessageCircleQuestion, Newspaper, Settings, Users, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { ROLE_LABELS, useAuth } from '../lib/auth'
@@ -25,6 +25,7 @@ export function Layout() {
     { to: '/centres', label: 'Centres et contacts', icon: <MapPin className="size-5" />, roles: ['support'] },
     { to: '/signalements', label: 'Signalements', icon: <Flag className="size-5" />, roles: ['moderator'], badge: dash?.reports_open },
     { to: '/utilisateurs', label: 'Utilisateurs', icon: <Users className="size-5" />, roles: ['moderator'] },
+    { to: '/publications', label: 'Publications du site', icon: <Newspaper className="size-5" />, roles: ['educator', 'support'] },
     { to: '/annonces', label: 'Annonces', icon: <Megaphone className="size-5" />, roles: ['educator', 'support'] },
     { to: '/administration', label: 'Administration', icon: <Settings className="size-5" />, roles: ['super_admin'] },
   ]
@@ -60,6 +61,9 @@ export function Layout() {
           </button>
         </div>
         {nav}
+        <a href="/" className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-bold text-white/70 hover:bg-white/10 hover:text-white">
+          <ExternalLink className="size-5" /> Voir le site public
+        </a>
         <div className="rounded-2xl bg-white/10 p-3 text-white">
           <div className="font-extrabold">{staff?.name}</div>
           <div className="text-xs text-white/70">{staff && ROLE_LABELS[staff.role]}</div>

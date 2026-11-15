@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
+import SiteApp from './site/SiteApp'
 import { Loading } from './components/ui'
 import { AuthProvider, useAuth } from './lib/auth'
 import Administration from './pages/Administration'
@@ -16,6 +17,8 @@ import HelpThread from './pages/help/HelpThread'
 import Login from './pages/Login'
 import ModuleEditor from './pages/modules/ModuleEditor'
 import Modules from './pages/modules/Modules'
+import Publications from './pages/publications/Publications'
+import PublicationEditor from './pages/publications/PublicationEditor'
 import Reports from './pages/Reports'
 import TipsFaq from './pages/TipsFaq'
 import UserDetail from './pages/users/UserDetail'
@@ -44,6 +47,8 @@ function Routed() {
         <Route path="utilisateurs" element={<Users />} />
         <Route path="utilisateurs/:id" element={<UserDetail />} />
         <Route path="annonces" element={<Announcements />} />
+        <Route path="publications" element={<Publications />} />
+        <Route path="publications/:id" element={<PublicationEditor />} />
         <Route path="administration" element={<Administration />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Route>
@@ -51,12 +56,19 @@ function Routed() {
   )
 }
 
-export default function App() {
+/** Back-office de l'équipe, servi sous /admin. */
+function AdminApp() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/admin">
         <Routed />
       </BrowserRouter>
     </AuthProvider>
   )
+}
+
+/** /admin… = back-office ; tout le reste = site vitrine public. */
+export default function App() {
+  const isAdmin = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')
+  return isAdmin ? <AdminApp /> : <SiteApp />
 }
