@@ -1,9 +1,9 @@
-import { BarChart3, Filter, MoreHorizontal, ShieldCheck, Users as UsersIcon } from 'lucide-react'
-import { useState } from 'react'
+import { BarChart3, Filter, MoreHorizontal, Pencil, ShieldCheck, Trash2, Users as UsersIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DailyLine } from '../../components/charts'
-import { Button, Card, Checkbox, Drawer, ErrorState, Input, Loading, Notice, PageHeader, Pagination, Pill, Select, StatCard, Table, Tabs } from '../../components/ui'
-import { qs, type Paginated } from '../../lib/api'
+import { Button, Card, Checkbox, Drawer, ErrorState, Field, Input, Loading, Modal, Notice, PageHeader, Pagination, Pill, Select, StatCard, Table, Tabs } from '../../components/ui'
+import { api, ApiError, errorMessage, qs, type Paginated } from '../../lib/api'
 import { relative, since } from '../../lib/format'
 import { useApi } from '../../lib/hooks'
 
@@ -42,6 +42,10 @@ export default function Users() {
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<number[]>([])
   const [drawer, setDrawer] = useState(false)
+  const [editing, setEditing] = useState<UserRow | null>(null)
+  const [deleting, setDeleting] = useState<UserRow | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [msg, setMsg] = useState<{ tone: 'mint' | 'danger'; text: string } | null>(null)
 
   const overview = useApi<{ active: number; new_this_week: number; suspended: number; inactive_6_months: number; regions: string[] }>('/admin/users-overview')
   const effectiveStatus = tab === 'inactive' ? ['inactive'] : status
@@ -55,6 +59,25 @@ export default function Users() {
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
     a.download = 'references-moon.csv'
     a.click()
+  }
+
+  const doDelete = async () => {
+    if (!deleting) return
+    setDeleteBusy(true)
+    setMsg(null)
+    try {
+      await api(`/admin/users/${deleting.id}`, { method: 'DELETE', body: { reason: "Suppression par l'administrateur" } })
+      setMsg({ tone: 'mint', text: `Compte de ${deleting.name} supprimé.` })
+      setSelected((s) => s.filter((x) => x !== deleting.id))
+      setDeleting(null)
+      list.reload()
+      overview.reload()
+    } catch (e) {
+      setMsg({ tone: 'danger', text: errorMessage(e) })
+      setDeleting(null)
+    } finally {
+      setDeleteBusy(false)
+    }
   }
 
   return (
@@ -112,6 +135,11 @@ export default function Users() {
           )}
 
           <Card>
+            {msg && (
+              <div className="mb-3">
+                <Notice tone={msg.tone}>{msg.text}</Notice>
+              </div>
+            )}
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Input placeholder="Rechercher par référence ou pseudo…" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} className="max-w-xs" />
               <Select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-auto">
@@ -176,10 +204,18 @@ export default function Users() {
                       <td className="px-3 py-2.5">{since(u.created_at)}</td>
                       <td className="px-3 py-2.5">{relative(u.last_activity_date)}</td>
                       <td className="px-3 py-2.5">{u.reports_count}</td>
-                      <td className="px-3 py-2.5">
-                        <Link to={`/utilisateurs/${u.id}`} aria-label="Ouvrir la fiche">
-                          <MoreHorizontal className="size-5 text-muted" />
-                        </Link>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => setEditing(u)} aria-label={`Modifier ${u.name}`} title="Modifier">
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-danger hover:bg-danger-soft" onClick={() => setDeleting(u)} aria-label={`Supprimer ${u.name}`} title="Supprimer">
+                            <Trash2 className="size-4" />
+                          </Button>
+                          <Link to={`/utilisateurs/${u.id}`} aria-label="Ouvrir la fiche" className="rounded-full p-1.5 text-muted hover:bg-lavender-soft hover:text-night">
+                            <MoreHorizontal className="size-4" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -227,6 +263,139 @@ export default function Users() {
           ))}
         </div>
       </Drawer>
+
+      <EditUserModal
+        user={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(text) => {
+          setMsg({ tone: 'mint', text })
+          setEditing(null)
+          list.reload()
+          overview.reload()
+        }}
+      />
+
+      <Modal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title={`Supprimer ${deleting?.name ?? ''} ?`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleting(null)}>
+              Annuler
+            </Button>
+            <Button variant="danger" loading={deleteBusy} onClick={doDelete}>
+              Supprimer définitivement
+            </Button>
+          </>
+        }
+      >
+        <Notice tone="danger">
+          Cette action est irréversible. Le compte <b>{deleting?.name}</b> ({deleting?.reference}) et toutes ses données (cycles, journal, progression) seront supprimés.
+        </Notice>
+      </Modal>
     </>
+  )
+}
+
+export function EditUserModal({ user, onClose, onSaved }: { user: UserRow | null; onClose: () => void; onSaved: (message: string) => void }) {
+  const [form, setForm] = useState({ name: '', age_range: '', language: 'fr', region: '', status: 'active' as 'active' | 'suspended', password: '' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    setForm({
+      name: user.name,
+      age_range: user.age_range ?? '',
+      language: user.language ?? 'fr',
+      region: user.region ?? '',
+      status: user.status,
+      password: '',
+    })
+    setErrors({})
+    setError('')
+  }, [user])
+
+  const submit = async () => {
+    if (!user) return
+    setSaving(true)
+    setErrors({})
+    setError('')
+    try {
+      const body: Record<string, string | null> = {
+        name: form.name.trim(),
+        age_range: form.age_range || null,
+        language: form.language,
+        region: form.region.trim() || null,
+        status: form.status,
+      }
+      if (form.password) body.password = form.password
+      await api(`/admin/users/${user.id}`, { method: 'PATCH', body })
+      onSaved(`Compte de ${form.name.trim()} modifié.`)
+    } catch (e) {
+      if (e instanceof ApiError && Object.keys(e.errors).length) setErrors(Object.fromEntries(Object.entries(e.errors).map(([k, v]) => [k, v[0]])))
+      else setError(errorMessage(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={!!user}
+      onClose={onClose}
+      title={`Modifier ${user?.name ?? ''}`}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button onClick={submit} loading={saving} disabled={!form.name.trim() || (form.password.length > 0 && form.password.length < 8)}>
+            Enregistrer
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <Field label="Pseudo" required error={errors.name}>
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Tranche d'âge" error={errors.age_range}>
+            <Select value={form.age_range} onChange={(e) => setForm({ ...form, age_range: e.target.value })}>
+              <option value="">Non renseignée</option>
+              {AGES.map((a) => (
+                <option key={a} value={a}>
+                  {a} ans
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Langue" error={errors.language}>
+            <Select value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+              <option value="fr">Français (FR)</option>
+              <option value="wo">Wolof (WO)</option>
+            </Select>
+          </Field>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Région" error={errors.region}>
+            <Input value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} placeholder="Ex. Dakar" />
+          </Field>
+          <Field label="Statut" error={errors.status}>
+            <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as 'active' | 'suspended' })}>
+              <option value="active">Actif</option>
+              <option value="suspended">Suspendu</option>
+            </Select>
+          </Field>
+        </div>
+        <Field label="Nouveau mot de passe (optionnel)" error={errors.password} hint="Laisser vide pour ne pas modifier. Sinon, 8 caractères minimum.">
+          <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="8 caractères minimum" />
+        </Field>
+        {error && <Notice tone="danger">{error}</Notice>}
+      </div>
+    </Modal>
   )
 }

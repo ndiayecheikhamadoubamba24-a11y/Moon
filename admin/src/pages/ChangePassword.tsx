@@ -8,7 +8,7 @@ import { ROLE_LABELS, useAuth } from '../lib/auth'
 /** Règles minimales, vérifiées aussi par l'API. */
 function checks(pw: string) {
   return [
-    { ok: pw.length >= 10, label: 'Au moins 10 caractères' },
+    { ok: pw.length >= 8, label: 'Au moins 8 caractères' },
     {
       ok: /[A-Za-z]/.test(pw) && /\d/.test(pw),
       label: 'Des lettres et au moins un chiffre',

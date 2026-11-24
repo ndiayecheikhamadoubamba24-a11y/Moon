@@ -115,8 +115,46 @@ class AdminTest extends TestCase
         $res = $this->actingAs($admin)->postJson('/api/v1/admin/staff', [
             'name' => 'Nouvelle éducatrice', 'email' => 'edu@moon.test', 'role' => 'educator',
         ])->assertCreated();
-        $this->assertNotEmpty($res->json('temporary_password'));
+        $this->assertSame(8, strlen($res->json('temporary_password')));
         $this->assertSame('educator', User::where('email', 'edu@moon.test')->value('role'));
+    }
+
+    public function test_admin_can_update_and_delete_users_and_staff_with_8_char_passwords(): void
+    {
+        $admin = User::factory()->staff('super_admin')->create();
+        $moderator = User::factory()->staff('moderator')->create();
+        $user = User::factory()->create(['name' => 'Aissatou', 'language' => 'fr', 'region' => 'Dakar']);
+
+        // Modification d'une utilisatrice (avec mot de passe de 8 caractères)
+        $this->actingAs($moderator)->patchJson("/api/v1/admin/users/{$user->id}", [
+            'name' => 'Aissatou Ndiaye',
+            'language' => 'wo',
+            'region' => 'Thiès',
+            'age_range' => '18-21',
+            'password' => 'Pass1234',
+        ])->assertOk()->assertJsonPath('name', 'Aissatou Ndiaye')->assertJsonPath('language', 'wo')->assertJsonPath('region', 'Thiès');
+
+        // Suppression d'une utilisatrice sans saisie manuelle obligatoire
+        $this->actingAs($moderator)->deleteJson("/api/v1/admin/users/{$user->id}")->assertOk();
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+
+        // Un membre peut choisir un mot de passe personnel de 8 caractères
+        $edu = User::factory()->staff('educator')->create(['email' => 'educ8@moon.test', 'password' => 'Temp1234', 'must_change_password' => true]);
+        $this->actingAs($edu)->postJson('/api/v1/admin/password', [
+            'current_password' => 'Temp1234',
+            'password' => 'MonSecr8',
+            'password_confirmation' => 'MonSecr8',
+        ])->assertOk()->assertJsonPath('must_change_password', false);
+
+        // Modification et suppression d'un membre de l'équipe par le super admin
+        $this->actingAs($admin)->patchJson("/api/v1/admin/staff/{$edu->id}", [
+            'name' => 'Awa Modifiée',
+            'role' => 'support',
+            'password' => 'NewPass8',
+        ])->assertOk()->assertJsonPath('user.name', 'Awa Modifiée')->assertJsonPath('user.role', 'support');
+
+        $this->actingAs($admin)->deleteJson("/api/v1/admin/staff/{$edu->id}")->assertOk();
+        $this->assertDatabaseMissing('users', ['id' => $edu->id]);
     }
 
     public function test_staff_created_with_password_must_choose_a_personal_one(): void

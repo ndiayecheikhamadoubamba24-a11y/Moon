@@ -1,12 +1,12 @@
-import { ArrowLeft, Award, BookOpen, CheckCircle2, Gamepad2, Info, KeyRound, Lock, Trash2 } from 'lucide-react'
+import { ArrowLeft, Award, BookOpen, CheckCircle2, Gamepad2, Info, KeyRound, Lock, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Button, Card, Checkbox, ErrorState, Field, Input, Loading, Modal, Notice, Pill, Select } from '../../components/ui'
+import { Button, Card, Checkbox, ErrorState, Field, Loading, Modal, Notice, Pill, Select } from '../../components/ui'
 import { api, errorMessage } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { fmtDate, fmtDateTime, relative, since } from '../../lib/format'
 import { useApi } from '../../lib/hooks'
-import { statusOf, type UserRow } from './Users'
+import { EditUserModal, statusOf, type UserRow } from './Users'
 
 type Detail = UserRow & {
   language: string
@@ -24,7 +24,7 @@ export default function UserDetail() {
   const { can } = useAuth()
   const { data: u, loading, error, reload } = useApi<Detail>(`/admin/users/${id}`)
   const reports = useApi<{ data: { id: number; reason: string }[] }>(can('moderator') ? '/admin/reports?status=open' : null)
-  const [modal, setModal] = useState<'suspend' | 'activate' | 'access' | 'delete' | null>(null)
+  const [modal, setModal] = useState<'edit' | 'suspend' | 'activate' | 'access' | 'delete' | null>(null)
   const [msg, setMsg] = useState<{ tone: 'mint' | 'danger'; text: string } | null>(null)
 
   const act = async (path: string, body: unknown, method: 'POST' | 'DELETE' = 'POST', after?: () => void) => {
@@ -57,6 +57,9 @@ export default function UserDetail() {
           </div>
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
+          <Button variant="outline" icon={<Pencil className="size-4" />} onClick={() => setModal('edit')}>
+            Modifier
+          </Button>
           {u.status === 'suspended' ? (
             <Button variant="outline" onClick={() => setModal('activate')}>
               Réactiver
@@ -135,6 +138,15 @@ export default function UserDetail() {
         <Notice icon={<Info className="size-4 shrink-0" />}>Tu ne vois ni les données de santé, ni les échanges d'aide, ni l'identité de cette personne.</Notice>
       </div>
 
+      <EditUserModal
+        user={modal === 'edit' ? u : null}
+        onClose={() => setModal(null)}
+        onSaved={(text) => {
+          setMsg({ tone: 'mint', text })
+          setModal(null)
+          reload()
+        }}
+      />
       <SuspendModal open={modal === 'suspend'} onClose={() => setModal(null)} reports={reports.data?.data ?? []} onConfirm={(b) => act(`/admin/users/${u.id}/suspend`, b)} />
       <ReasonModal
         open={modal === 'activate'}
@@ -288,14 +300,13 @@ function AccessModal({ open, onClose, onConfirm }: { open: boolean; onClose: () 
 function DeleteModal({ open, onClose, onConfirm }: { open: boolean; onClose: () => void; onConfirm: (reason: string) => void }) {
   const [reason, setReason] = useState('Demande de la personne')
   const [ok, setOk] = useState(false)
-  const [typed, setTyped] = useState('')
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="Supprimer définitivement ce compte ?"
       footer={
-        <Button variant="danger" disabled={!ok || typed !== 'SUPPRIMER'} onClick={() => onConfirm(reason)}>
+        <Button variant="danger" disabled={!ok} onClick={() => onConfirm(reason)}>
           Supprimer définitivement
         </Button>
       }
@@ -311,9 +322,6 @@ function DeleteModal({ open, onClose, onConfirm }: { open: boolean; onClose: () 
           </Select>
         </Field>
         <Checkbox checked={ok} onChange={setOk} label="J'ai compris que c'est irréversible" />
-        <Field label="Tape SUPPRIMER pour confirmer">
-          <Input value={typed} onChange={(e) => setTyped(e.target.value)} />
-        </Field>
       </div>
     </Modal>
   )

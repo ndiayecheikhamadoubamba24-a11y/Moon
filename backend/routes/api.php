@@ -139,6 +139,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('users-overview', [Admin\UserController::class, 'overview']);
                 Route::get('users-registrations', [Admin\UserController::class, 'registrations']);
                 Route::get('users/{user}', [Admin\UserController::class, 'show']);
+                Route::patch('users/{user}', [Admin\UserController::class, 'update']);
                 Route::post('users/{user}/suspend', [Admin\UserController::class, 'suspend']);
                 Route::post('users/{user}/activate', [Admin\UserController::class, 'activate']);
                 Route::post('users/{user}/reset-access', [Admin\UserController::class, 'resetAccess']);
@@ -178,6 +179,8 @@ Route::prefix('v1')->group(function () {
             Route::middleware('role:super_admin')->group(function () {
                 Route::get('staff', [Admin\UserController::class, 'staff']);
                 Route::post('staff', [Admin\UserController::class, 'storeStaff']);
+                Route::patch('staff/{user}', [Admin\UserController::class, 'updateStaff']);
+                Route::delete('staff/{user}', [Admin\UserController::class, 'destroyStaff']);
                 Route::post('staff/{user}/password', [Admin\UserController::class, 'resetStaffPassword']);
                 Route::patch('users/{user}/role', [Admin\UserController::class, 'updateRole']);
                 Route::get('audit-logs', [Admin\AuditLogController::class, 'index']);

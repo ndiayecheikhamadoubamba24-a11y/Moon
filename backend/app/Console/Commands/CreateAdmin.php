@@ -32,9 +32,9 @@ class CreateAdmin extends Command
             return self::FAILURE;
         }
 
-        $password = $this->secret('Mot de passe (laisser vide pour en générer un)') ?: Str::password(16, symbols: false);
-        if (strlen($password) < 10) {
-            $this->error('Le mot de passe doit faire au moins 10 caractères.');
+        $password = $this->secret('Mot de passe (laisser vide pour en générer un)') ?: Str::password(8, symbols: false);
+        if (strlen($password) < 8) {
+            $this->error('Le mot de passe doit faire au moins 8 caractères.');
 
             return self::FAILURE;
         }

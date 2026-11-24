@@ -1,4 +1,4 @@
-import { CheckCircle2, Copy, Eye, EyeOff, KeyRound, RefreshCw, Settings, UserPlus } from 'lucide-react'
+import { CheckCircle2, Copy, Eye, EyeOff, KeyRound, Pencil, RefreshCw, Settings, Trash2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { Button, Card, ErrorState, Field, Input, Loading, Modal, Notice, PageHeader, Pagination, Pill, Select, Table, Tabs, useConfirm } from '../components/ui'
 import { api, ApiError, errorMessage, type Paginated } from '../lib/api'
@@ -28,11 +28,11 @@ const ROLE_SCOPES: Record<string, string> = {
   support: 'Demandes d’aide, centres et contacts, publications, annonces',
 }
 
-/** Mot de passe provisoire lisible à l'oral (sans 0/O ni 1/l). */
+/** Mot de passe provisoire lisible à l'oral (sans 0/O ni 1/l), 8 caractères. */
 function generatePassword() {
   const pick = (set: string, n: number) => Array.from(crypto.getRandomValues(new Uint32Array(n)), (x) => set[x % set.length]).join('')
   const letters = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
-  return pick(letters, 4) + pick('23456789', 2) + pick(letters, 4)
+  return pick(letters, 3) + pick('23456789', 2) + pick(letters, 3)
 }
 
 type Credentials = { name: string; email: string; role: string; password: string }
@@ -87,7 +87,58 @@ function Team() {
   const [saving, setSaving] = useState(false)
   const [reset, setReset] = useState<Member | null>(null)
   const [resetDone, setResetDone] = useState<Credentials | null>(null)
+  const [editing, setEditing] = useState<Member | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'educator', password: '' })
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({})
+  const [editShow, setEditShow] = useState(true)
+  const [editSaving, setEditSaving] = useState(false)
+  const [deleting, setDeleting] = useState<Member | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
   const confirm = useConfirm()
+
+  const openEdit = (m: Member) => {
+    setEditErrors({})
+    setEditForm({ name: m.name, email: m.email, role: m.role, password: '' })
+    setEditing(m)
+  }
+
+  const saveEdit = async () => {
+    if (!editing) return
+    setEditSaving(true)
+    setEditErrors({})
+    setMsg(null)
+    try {
+      const body: Record<string, string> = { name: editForm.name.trim(), email: editForm.email.trim() }
+      if (editing.id !== me?.id) body.role = editForm.role
+      if (editForm.password) body.password = editForm.password
+      await api(`/admin/staff/${editing.id}`, { method: 'PATCH', body })
+      setMsg({ tone: 'mint', text: `Compte de ${editForm.name.trim()} modifié.` })
+      setEditing(null)
+      reload()
+    } catch (e) {
+      if (e instanceof ApiError && Object.keys(e.errors).length) setEditErrors(Object.fromEntries(Object.entries(e.errors).map(([k, v]) => [k, v[0]])))
+      else setMsg({ tone: 'danger', text: errorMessage(e) })
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  const doDelete = async () => {
+    if (!deleting) return
+    setDeleteBusy(true)
+    setMsg(null)
+    try {
+      await api(`/admin/staff/${deleting.id}`, { method: 'DELETE' })
+      setMsg({ tone: 'mint', text: `Compte de ${deleting.name} supprimé.` })
+      setDeleting(null)
+      reload()
+    } catch (e) {
+      setMsg({ tone: 'danger', text: errorMessage(e) })
+      setDeleting(null)
+    } finally {
+      setDeleteBusy(false)
+    }
+  }
 
   const create = async () => {
     setSaving(true)
@@ -166,11 +217,21 @@ function Team() {
                     <div className="mt-1 text-xs whitespace-nowrap text-muted">Ajouté le {fmtDate(m.created_at)}</div>
                   </td>
                   <td className="px-3 py-2.5 text-right">
-                    {!self && (
-                      <Button size="sm" variant="ghost" className="whitespace-nowrap" icon={<KeyRound className="size-4" />} onClick={() => (setResetDone(null), setReset(m))}>
-                        Réinitialiser
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button size="sm" variant="ghost" className="whitespace-nowrap" icon={<Pencil className="size-4" />} onClick={() => openEdit(m)}>
+                        Modifier
                       </Button>
-                    )}
+                      {!self && (
+                        <>
+                          <Button size="sm" variant="ghost" className="whitespace-nowrap" icon={<KeyRound className="size-4" />} onClick={() => (setResetDone(null), setReset(m))}>
+                            Réinitialiser
+                          </Button>
+                          <Button size="sm" variant="danger" className="whitespace-nowrap" icon={<Trash2 className="size-4" />} onClick={() => setDeleting(m)} aria-label={`Supprimer ${m.name}`}>
+                            Supprimer
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )
@@ -202,7 +263,7 @@ function Team() {
                 ))}
               </Select>
             </Field>
-            <Field label="Mot de passe provisoire" required error={errors.password} hint="Au moins 8 caractères. La personne le remplacera à sa première connexion." group>
+            <Field label="Mot de passe provisoire" required error={errors.password} hint="8 caractères minimum. La personne le remplacera à sa première connexion." group>
               <div className="flex gap-2">
                 <Input type={show ? 'text' : 'password'} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} className="font-mono" aria-label="Mot de passe provisoire" />
                 <Button type="button" size="sm" variant="ghost" onClick={() => setShow(!show)} aria-label={show ? 'Masquer' : 'Afficher'}>
@@ -219,6 +280,85 @@ function Team() {
           </>
         )}
       </Card>
+
+      <Modal
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        title={`Modifier ${editing?.name ?? ''}`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditing(null)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={saveEdit}
+              loading={editSaving}
+              disabled={!editForm.name.trim() || !editForm.email.trim() || (editForm.password.length > 0 && editForm.password.length < 8)}
+            >
+              Enregistrer
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Field label="Nom complet" required error={editErrors.name}>
+            <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+          </Field>
+          <Field label="E-mail" required error={editErrors.email}>
+            <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+          </Field>
+          {editing && editing.id !== me?.id && (
+            <Field label="Poste" required error={editErrors.role}>
+              <Select value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>
+                {Object.entries(ROLE_LABELS).map(([k, l]) => (
+                  <option key={k} value={k}>
+                    {l}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+          <Field label="Nouveau mot de passe (optionnel)" error={editErrors.password} hint="Laisser vide pour ne pas modifier. Sinon, au moins 8 caractères." group>
+            <div className="flex gap-2">
+              <Input
+                type={editShow ? 'text' : 'password'}
+                value={editForm.password}
+                onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                placeholder="8 caractères minimum"
+                className="font-mono"
+              />
+              <Button type="button" size="sm" variant="ghost" onClick={() => setEditShow(!editShow)} aria-label={editShow ? 'Masquer' : 'Afficher'}>
+                {editShow ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setEditForm({ ...editForm, password: generatePassword() })} aria-label="Générer un mot de passe de 8 caractères" title="Générer">
+                <RefreshCw className="size-4" />
+              </Button>
+            </div>
+          </Field>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title={`Supprimer ${deleting?.name ?? ''} ?`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleting(null)}>
+              Annuler
+            </Button>
+            <Button variant="danger" loading={deleteBusy} onClick={doDelete}>
+              Supprimer définitivement
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Notice tone="danger">
+            Le compte de <b>{deleting?.name}</b> ({deleting?.email}) sera définitivement supprimé et toutes ses sessions seront fermées.
+          </Notice>
+        </div>
+      </Modal>
 
       <Modal open={!!reset} onClose={() => setReset(null)} title={`Nouveau mot de passe pour ${reset?.name ?? ''}`}>
         {resetDone ? (

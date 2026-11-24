@@ -125,6 +125,40 @@ class UserController extends Controller
         ]);
     }
 
+    public function update(Request $request, User $user): JsonResponse
+    {
+        abort_if($user->isStaff() && ! $request->user()->hasRole(User::ROLE_SUPER_ADMIN), 403);
+        $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:50'],
+            'age_range' => ['nullable', Rule::in(User::AGE_RANGES)],
+            'language' => ['sometimes', Rule::in(['fr', 'wo'])],
+            'region' => ['nullable', 'string', 'max:64'],
+            'status' => ['sometimes', Rule::in(['active', 'suspended'])],
+            'password' => ['nullable', 'string', 'min:8', 'max:100'],
+        ], [
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
+        ]);
+        $payload = collect($data)->except(['password', 'status'])->all();
+        if (! empty($data['password'])) {
+            $payload['password'] = $data['password'];
+        }
+        $user->fill($payload);
+        if (isset($data['status'])) {
+            $user->forceFill([
+                'status' => $data['status'],
+                'suspended_until' => $data['status'] === 'active' ? null : $user->suspended_until,
+                'suspension_reason' => $data['status'] === 'active' ? null : $user->suspension_reason,
+            ]);
+        }
+        $user->save();
+        if (isset($data['status']) && $data['status'] === 'suspended') {
+            $user->tokens()->delete();
+        }
+        AuditLog::record('user.updated', $user, collect($data)->except('password')->all());
+
+        return response()->json($this->present($user->fresh()));
+    }
+
     private function present(User $u): array
     {
         return [...$u->only(self::LIST_FIELDS), 'reference' => $u->reference(), 'reports_count' => $u->reports_count ?? 0];
@@ -186,8 +220,12 @@ class UserController extends Controller
     public function destroy(Request $request, User $user): JsonResponse
     {
         $this->guardSelfAndAdmins($request, $user);
-        $data = $request->validate(['reason' => ['required', 'string', 'max:255'], 'confirm' => ['accepted']]);
-        AuditLog::record('user.deleted', $user, ['role' => $user->role, 'reference' => $user->reference(), 'reason' => $data['reason']]);
+        $data = $request->validate(['reason' => ['nullable', 'string', 'max:255']]);
+        AuditLog::record('user.deleted', $user, [
+            'role' => $user->role,
+            'reference' => $user->reference(),
+            'reason' => $data['reason'] ?? "Suppression par l'administrateur",
+        ]);
         $user->tokens()->delete();
         $user->delete();
 
@@ -210,7 +248,7 @@ class UserController extends Controller
             'email.unique' => 'Un compte existe déjà avec cet e-mail.',
             'password.min' => 'Le mot de passe provisoire doit contenir au moins 8 caractères.',
         ]);
-        $password = $data['password'] ?? self::readablePassword(10);
+        $password = $data['password'] ?? self::readablePassword(8);
 
         $user = new User(['name' => $data['name'], 'email' => strtolower($data['email']), 'password' => $password]);
         $user->forceFill([
@@ -241,7 +279,7 @@ class UserController extends Controller
         abort_unless($user->isStaff(), 404);
         abort_if($user->is($request->user()), 422, 'Pour ton propre compte, utilise « Changer mon mot de passe ».');
         $data = $request->validate(['password' => ['nullable', 'string', 'min:8', 'max:100']]);
-        $password = $data['password'] ?? self::readablePassword(10);
+        $password = $data['password'] ?? self::readablePassword(8);
         $user->forceFill(['password' => $password, 'must_change_password' => true])->save();
         $user->tokens()->delete();
         AuditLog::record('staff.password_reset', $user);
@@ -252,15 +290,59 @@ class UserController extends Controller
         ]);
     }
 
+    public function updateStaff(Request $request, User $user): JsonResponse
+    {
+        abort_unless($user->isStaff(), 404);
+        $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:100'],
+            'email' => ['sometimes', 'required', 'email', 'max:191', Rule::unique('users', 'email')->ignore($user->id)],
+            'role' => ['sometimes', 'required', Rule::in(User::STAFF_ROLES)],
+            'password' => ['nullable', 'string', 'min:8', 'max:100'],
+        ], [
+            'email.unique' => 'Un compte existe déjà avec cet e-mail.',
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
+        ]);
+        if (isset($data['role']) && $user->is($request->user()) && $data['role'] !== $user->role) {
+            abort(422, 'Action impossible sur ton propre rôle.');
+        }
+        if (isset($data['name'])) {
+            $user->name = $data['name'];
+        }
+        if (isset($data['email'])) {
+            $user->email = strtolower($data['email']);
+        }
+        if (isset($data['role'])) {
+            $user->forceFill(['role' => $data['role']]);
+        }
+        if (! empty($data['password'])) {
+            $user->forceFill(['password' => $data['password'], 'must_change_password' => ! $user->is($request->user())]);
+        }
+        $user->save();
+        AuditLog::record('staff.updated', $user, collect($data)->except('password')->all());
+
+        return response()->json(['user' => $this->presentStaff($user->fresh())]);
+    }
+
+    public function destroyStaff(Request $request, User $user): JsonResponse
+    {
+        abort_unless($user->isStaff(), 404);
+        $this->guardSelfAndAdmins($request, $user);
+        AuditLog::record('staff.deleted', $user, ['email' => $user->email, 'role' => $user->role]);
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Membre supprimé.']);
+    }
+
     /** La personne connectée choisit son mot de passe personnel (obligatoire au premier accès). */
     public function changeOwnPassword(Request $request): JsonResponse
     {
         $user = $request->user();
         $data = $request->validate([
             'current_password' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:10', 'max:100', 'confirmed', 'different:current_password'],
+            'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed', 'different:current_password'],
         ], [
-            'password.min' => 'Le nouveau mot de passe doit contenir au moins 10 caractères.',
+            'password.min' => 'Le nouveau mot de passe doit contenir au moins 8 caractères.',
             'password.confirmed' => 'Les deux mots de passe ne sont pas identiques.',
             'password.different' => 'Choisis un mot de passe différent de celui donné par l\'administrateur.',
         ]);
